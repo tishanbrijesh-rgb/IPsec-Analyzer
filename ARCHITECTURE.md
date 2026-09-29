@@ -43,6 +43,10 @@ records what actually runs.
 8. Keep testbed ground truth out of blind packet analysis. Configuration-aware
    assessment is an explicitly selected mode with a separate trust label.
 9. Treat risk score, evidence coverage and model confidence as distinct values.
+10. Verify remediation from comparable before/after evidence; missing packets
+    alone do not prove that a vulnerable configuration was removed. Evidence
+    tiers and remediation workflows have public prior art, so differentiate by
+    measured implementation quality rather than a novelty assertion.
 
 ## 3. System context and trust boundaries
 
@@ -130,6 +134,8 @@ flowchart TD
   V --> D
   D --> P[API and dashboard]
   D --> R[Executive and technical exports]
+  D --> C[Paired remediation comparison]
+  C --> P
 ```
 
 ### 5.1 Ingestion
@@ -219,6 +225,23 @@ correct.
 
 The current API returns synchronous analysis results containing sessions, exchanges, flows, evidence, three versioned rule evaluations per session, failed-rule findings, coverage, a narrow assessed-rule pass rate and explicit unknown fields. The overall security/risk scores remain withheld. Focused resources expose sessions, flows, findings and evidence; status is `complete` while a result remains in memory, then unavailable after eviction or restart. The analysis result also includes at most 5,000 metadata-only summaries for packets cited by rule evaluations or selected IKE responses, with an explicit truncation flag; frame bytes and payloads are excluded. The dashboard shows rule and exchange detail, packet references, a separate `INFERRED` traffic table, limitations and report actions. One versioned report document feeds text, HTML, a bounded text-only PDF and JSON. Shared copies in all formats omit capture identifiers, endpoint addresses and SPI values. Durable jobs, persistent storage and deployment authentication remain future capabilities.
 
+### 5.8 Paired remediation verification (planned)
+
+A comparison request names two already analyzed runs: before and after. A
+scope checker verifies that the same tunnel or a documented replacement was
+tested, the relevant configuration and capture windows are comparable, and
+the rule versions and evidence coverage permit comparison. The comparison
+matches findings by control and subject rather than by capture-local ID. It
+keeps before and after packet/configuration references separate and reports
+changes in rule status, observations, coverage and score eligibility.
+
+The verdict is `VERIFIED_IMPROVED` only if positive after-evidence establishes
+the corrected property and the original finding resolves. Other outcomes are
+`UNCHANGED`, `REGRESSED` or `INCONCLUSIVE`. A short after-capture that simply
+lacks IKEv1, a weak proposal or an ESP flow is inconclusive about removal. The
+system recommends a change but never applies gateway configuration itself.
+This comparison is planned; the current API and dashboard do not expose it.
+
 ## 6. Canonical contracts
 
 The current packet event schema is version 1.1. A capture ID is derived from its SHA-256 hash; sessions and flows receive deterministic IDs within that capture. Packet references use the capture ID and one-based packet indices. Timestamps are converted to nanoseconds; subnanosecond precision is truncated with a diagnostic. Results are not durably persisted; redacted report exports exist in text, HTML, PDF and JSON.
@@ -247,6 +270,10 @@ ThreatRow {id, category, affected_control, severity, finding_ids,
            evidence_refs, impact, remediation, mapping_version}
 RiskScore {value?, band?, status, policy_version, eligible_rule_ids,
            contribution_ids, coverage, withheld_reason?}
+RemediationComparison {before_analysis_id, after_analysis_id, subject_match,
+                       comparable_scope, rule_version_match, old_finding_ids,
+                       new_finding_ids, before_evidence_refs,
+                       after_evidence_refs, verdict, reason}
 Assessment {id, capture_id, session_ids, findings, coverage,
             risk_score?, threat_rows, score_policy_version,
             rule_set_version, limitations}
@@ -324,6 +351,7 @@ once the hosting environment is selected.
 | Evidence | Provenance, unknown state and proposal-versus-selection distinction |
 | Configuration match | Valid, stale, unmatched, ambiguous and secret-bearing exports; configured versus installed state |
 | Rules/score/threats | Fail, pass, unknown, not-applicable, formula boundary and version/coverage cases; withheld score and threat provenance |
+| Remediation comparison | Positive before/after improvement, unchanged, regression, missing after exchange, unmatched tunnel and lower after-coverage |
 | ML | Run-level holdout, per-class metrics, calibration, abstention and schema compatibility; synthetic versus real-application scope |
 | API/UI/reports | Valid, empty, partial and error states; score/threat/coverage consistency, evidence links and redaction |
 | Live | Permissions, stop/restart, dropped packets and bounded resources before support is claimed |
@@ -342,8 +370,9 @@ Performance claims require measurement on named hardware, captures and settings.
    truth, captures and dataset card, with optional AH marked explicitly.
 5. AI: versioned features, trained/evaluated classifier, calibration,
    abstention and independent real-traffic validation.
-6. Product: API, interactive dashboard, matching score/threat views and
-   executive/technical exports from one report model.
+6. Product: API, interactive dashboard, matching score/threat views,
+   before/after remediation comparison and executive/technical exports from
+   one report model.
 7. Live path: authorized adapter, limits, security controls and measured
    performance on named hardware.
 8. Submission: working prototype, classifier, dashboard, assessment report,

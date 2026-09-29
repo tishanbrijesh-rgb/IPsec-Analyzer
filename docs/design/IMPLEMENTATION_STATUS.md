@@ -5,7 +5,8 @@
 The [SIH-aligned implementation plan](IMPLEMENTATION_PHASES.md) and
 [project improvement plan](PROJECT_IMPROVEMENT_PLAN.md) now include an
 authorized-configuration evidence path, broader assessment, a coverage-gated
-risk score, threat matrix and final submission package. These are planned
+risk score, threat matrix, paired remediation verification and final submission
+package. These are planned
 requirements, not implemented features. The phase states below retain their
 documented prototype scope until the new gates pass.
 

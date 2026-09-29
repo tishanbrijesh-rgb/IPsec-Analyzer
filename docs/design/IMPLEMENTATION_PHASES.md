@@ -253,14 +253,19 @@ emitted until a classifier has passed the Phase 5 validation gate. See
    weights and risk bands; implement the threat matrix and keep API, dashboard
    and report outputs identical. Publish score only for cases that pass its
    minimum-evidence gate.
-3. **Dataset and AI:** finish the requested configuration coverage matrix,
+3. **Remediation verification:** compare user-selected before/after runs with
+   matched tunnel scope, capture conditions and positive evidence of the new
+   state. Emit improved, unchanged, regressed or inconclusive; absence of a
+   previously seen packet in a short capture is not proof of a fix. Treat this
+   as a candidate differentiator, not a claim of uniqueness.
+4. **Dataset and AI:** finish the requested configuration coverage matrix,
    normal-traffic control and dataset card; obtain independent physical-host or
    developer and authorized real-traffic evaluation. Preserve the current
    synthetic pilot label until those results exist.
-4. **Product verification:** exercise supported offline and live paths,
+5. **Product verification:** exercise supported offline and live paths,
    responsive and keyboard dashboard review, score/unknown displays, threat
    drill-down and redacted exports against the same fixtures.
-5. **Submission:** freeze the technical docs and limitations, run the written
+6. **Submission:** freeze the technical docs and limitations, run the written
    demo on the delivery machine, record the video, and assemble every expected
    deliverable with a traceable evidence index.
 

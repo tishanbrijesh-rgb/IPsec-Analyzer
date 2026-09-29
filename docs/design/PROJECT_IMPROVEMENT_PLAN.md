@@ -60,6 +60,7 @@ Completion is based on the checks below, not on the number of features added.
 | P0 | Configuration-aware assessment | Authorized config input with provenance; mode, lifetime, replay, PFS and compliance checks | Capture-only results stay unknown; config-backed checks cite source and have positive, negative and partial-evidence tests |
 | P0 | Risk score and threat matrix | Versioned formula, coverage gate, risk bands and evidence-linked threat categories | Score is shown only with sufficient evidence; JSON, dashboard and both reports agree |
 | P0 | SIH demo and submission | Strong/weak, offline/live, inference/abstention, score or withheld state, threat matrix, exports and video | Another person can follow the guide and reproduce every shown claim |
+| P1 | Evidence-backed remediation verification | Paired before/after analyses with comparable scope, finding transition and evidence links | A changed finding is verified only by positive after-evidence; otherwise the result is inconclusive |
 | P1 | Testbed and dataset coverage | Requested configuration matrix, normal-traffic control, optional AH decision and revised dataset card | Each SIH configuration and traffic family has a verified or explicit gap status; no secrets enter shared artifacts |
 | P1 | AI credibility | Complete-run evaluation on another host or by another developer plus authorized real traffic | Per-class errors, abstentions and calibration reported with sample counts; unsupported flows abstain |
 | P1 | Product and live validation | Keyboard/mobile review and representative bounded live measurements | API, dashboard and exports agree; stop/error cleanup and measured limits are reproducible |
@@ -107,6 +108,26 @@ traffic classifier change cryptographic risk findings.
 findings and threat rows; capture-only analysis does not invent hidden
 settings. A scored case has adequate coverage, while an insufficient-evidence
 case withholds its score. API, dashboard, executive and technical exports match.
+
+### A2. Remediation verification (candidate differentiator)
+
+After the single-run assessment is stable, support a user-selected before/after
+pair. Require the same tunnel or a documented replacement, comparable capture
+scope, timestamps and configuration provenance. Compare rule outcomes,
+underlying observations, coverage and score eligibility; show the old and new
+evidence side by side. A remediation is `VERIFIED_IMPROVED` only when the after
+run positively establishes the desired state and the relevant finding is
+resolved. Use `UNCHANGED`, `REGRESSED` or `INCONCLUSIVE` for the other cases.
+Failure to observe an old weak exchange in a short after-capture is not proof
+that the weak configuration was removed.
+
+**Exit check:** a controlled weak-to-strong lab change produces linked before
+and after records and a reproducible improvement verdict. An incomplete,
+unmatched or lower-coverage after-run is inconclusive rather than a false pass.
+This is a candidate product distinction, not a claim of unique prior art:
+public projects such as [TunnelScope](https://github.com/7-Bala/TunnelScope)
+already report overlapping evidence and posture features, and repository
+descriptions require implementation-level verification before comparison.
 
 ### B. Live ingestion and resource safety
 
@@ -178,16 +199,18 @@ SIH claim maps to a test, run record or explicit limitation.
    matrix, with evidence links and unknown handling.
 3. Surface the new contract in API, dashboard and both report levels; finish
    keyboard and responsive checks on real browser flows.
-4. Fill the SIH testbed coverage matrix and normal-traffic control; update the
+4. Add the paired before/after verification path and its inconclusive cases,
+   then show a controlled improvement in the demo.
+5. Fill the SIH testbed coverage matrix and normal-traffic control; update the
    dataset card. Keep optional AH explicitly scoped.
-5. Evaluate the frozen classifier on independent physical-host or
+6. Evaluate the frozen classifier on independent physical-host or
    another-developer runs and authorized real traffic when available. Report
    abstentions and calibration limits without changing the pilot gate to fit
    the challenge set.
-6. Repeat bounded live-load measurements on named demo hardware, reconcile
+7. Repeat bounded live-load measurements on named demo hardware, reconcile
    architecture/status docs, execute the runbook and record the submission
    video and evidence index.
-7. Decide whether durable jobs or deployment authentication are needed for the
+8. Decide whether durable jobs or deployment authentication are needed for the
    actual delivery environment; implement against that decision.
 
 ## Decisions and dependencies

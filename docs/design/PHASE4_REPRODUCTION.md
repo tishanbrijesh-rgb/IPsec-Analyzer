@@ -78,3 +78,29 @@ native ESP flows; its SHA-256 was
 These fresh runs verify the instructions on the original host. They are not
 independent-host or another-developer evidence and stay in ignored generated
 directories rather than the shared dataset.
+
+## Kali VM reproduction on 29 September 2026
+
+The user repeated the modern and contrasting CBC `voip-like` runs on a separate
+Kali Linux installation in VMware. The host reported kernel
+`6.19.14+kali-amd64` (`x86_64`), strongSwan `6.1.0`, tcpdump `4.99.6`, and
+Python `3.14.7`. The environment check was recorded at 15:46:52 UTC. The
+`swanctl --version` command printed its version, then could not connect to
+`charon` after the run had torn down the daemon; this is not evidence of a
+failed tunnel during either run.
+
+The completed runs are `kali-modern-02` and `kali-cbc-02`; earlier `-01` run
+directories were incomplete and are excluded. Both completed runs have a
+`dataset_record.json`, nonempty `outer.pcap`, and `sa-status.log` showing
+installed Child SAs at both peers. An independent analyzer read of each PCAP
+matched the recorded SHA-256 and packet count, found zero capture diagnostics,
+one IKE session, and two ESP directions. The modern run had 86 packets and
+selected IKE encryption transform 20 (AES-GCM-16); the CBC run had 88 packets
+and selected transform 12 (AES-CBC). Both records remain in the ignored Kali
+`testbed/generated/` directory and have not entered the shared dataset or
+model evaluation.
+
+This verifies reproduction on a second Linux installation. The Kali VM appears
+to run on the user's original Windows machine, and the same operator performed
+the checks. Independent physical-host or another-developer attestation and
+external model validation remain open.

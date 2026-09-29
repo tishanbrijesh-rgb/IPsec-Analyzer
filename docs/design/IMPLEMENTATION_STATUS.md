@@ -33,7 +33,7 @@ Phases 0–3 pass their documented exit checks; see [the completion gate](PHASE0
 
 - Phase 4 `--check` and index rebuild re-analyzed all 44 shared captures and matched the existing 14/18/6/6 reference/train/validation/test index exactly; a fabricated packet count with an otherwise valid capture hash is now rejected.
 - A Kali Linux VMware installation reproduced the modern and CBC `voip-like` cases as `kali-modern-02` and `kali-cbc-02`. Both peers reported installed Child SAs. Independent PCAP analysis matched both saved hashes and packet counts, found no capture diagnostics, selected IKE encryption IDs 20 and 12 respectively, and found two ESP directions in each. The runs had 86 and 88 packets. See [Phase 4 reproduction](PHASE4_REPRODUCTION.md). These ignored captures have not been added to training or the shared dataset.
-- The Phase 5 pilot model was rebuilt on Kali from the pinned dataset and predicted `voip-like` for the 40-packet sender ESP direction of both new Kali runs without abstaining. This is a two-run, single-profile cross-installation check, not a broad external-validation or confidence-calibration result; see [Phase 5 local and Kali checks](PHASE5_LOCAL_CHECK.md).
+- The Phase 5 pilot model was rebuilt on Kali from the pinned dataset and checked against seven new runs covering all six synthetic profiles. Five runs were accepted and matched their generator labels; the three-packet ICMP run abstained under the minimum-support rule, and the web run abstained as outside training support despite matching the generator profile. This is a cross-installation synthetic check, not real-application or confidence-calibration evidence; see [Phase 5 local and Kali checks](PHASE5_LOCAL_CHECK.md).
 
 ## Remaining gates
 

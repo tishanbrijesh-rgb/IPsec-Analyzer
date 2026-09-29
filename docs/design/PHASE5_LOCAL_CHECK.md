@@ -21,16 +21,35 @@ The captures and logs remain in ignored `testbed/generated/` directories. They w
 ## Kali VM cross-installation check
 
 On 29 September 2026, the pilot model was rebuilt from the pinned dataset on a
-separate Kali Linux VMware installation. Two new `voip-like` runs, one modern
-AES-GCM tunnel (`kali-modern-02`) and one CBC tunnel (`kali-cbc-02`), were
-analyzed without adding either capture to training. Each run's busiest ESP
-direction contained 40 packets. Both predictions were `voip-like` and neither
-abstained, matching the synthetic generator labels. The captures had already
-passed hash, packet-count, selected-IKE-transform, and two-direction ESP checks
+separate Kali Linux VMware installation. Seven new runs were analyzed without
+adding their captures to training or the shared dataset. The run-level check
+uses the busiest ESP direction, as in the pilot training rule. All seven
+captures matched their secret-free record hashes and packet counts, had zero
+capture diagnostics, and contained two ESP directions. The modern and CBC
+`voip-like` runs also passed the selected-IKE-transform and installed-SA checks
 documented in [Phase 4 reproduction](PHASE4_REPRODUCTION.md).
 
-This is two runs of one synthetic traffic profile on a second Linux
-installation. The VM appears to share the original physical machine and the
-same operator performed the check. Other profiles, real applications,
-independent physical-host or developer evaluation, and reliable confidence
-calibration remain unverified.
+| Kali run | Synthetic generator label | Sender ESP packets | Pilot output |
+| --- | --- | ---: | --- |
+| `kali-modern-02` | `voip-like` | 40 | `voip-like` |
+| `kali-cbc-02` | `voip-like` | 40 | `voip-like` |
+| `kali-video-301` | `video-like` | 40 | `video-like` |
+| `kali-message-301` | `messaging-like` | 27 | `messaging-like` |
+| `kali-email-301` | `email-like` | 35 | `email-like` |
+| `kali-web-301` | `web-like` | 25 | abstained as `unknown/other` |
+| `kali-icmp-301` | `icmp` | 3 | abstained as `unknown/other` |
+
+Four of six distinct profiles were accepted and matched the generator label;
+the extra CBC `voip-like` run also matched. ICMP abstained under the minimum
+ten-packet rule. Web abstained with the reported reason `Low confidence or
+outside training support`. The Kali web flow had 25 sender packets, compared
+with 24 in the accepted WSL web run. Applying the pinned local model to the
+Kali-reported flow features gives a nearest `web-like` distance of about
+0.0898, above its maximum support distance of about 0.0333. This illustrates
+that the pilot support boundary is narrow; the abstention is retained rather
+than weakening the threshold for this case.
+
+These are synthetic profiles on a second Linux installation. The VM appears to
+share the original physical machine and the same operator performed the check.
+Real applications, independent physical-host or developer evaluation, and
+reliable confidence calibration remain unverified.

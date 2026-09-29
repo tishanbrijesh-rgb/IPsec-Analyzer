@@ -17,3 +17,20 @@ The `synthetic-centroid-2` artifact was loaded after rebuilding from the unchang
 Five of six distinct profiles were accepted and matched their generator labels in the busiest direction; the three-packet ICMP flow abstained. The extra CBC run also matched (six accepted and correct of seven total runs). This is a small local challenge check with a new seed, not a replacement for the pinned held-out test. It does not validate numerical confidence: scores near 1.0 can be overconfident on this narrow synthetic family. All six reverse directions abstained.
 
 The captures and logs remain in ignored `testbed/generated/` directories. They were **not** added to `data/sample/`, the dataset index, or model training. The Phase 5 external-validation gate remains open pending independently generated runs on another host and broader traffic sources.
+
+## Kali VM cross-installation check
+
+On 29 September 2026, the pilot model was rebuilt from the pinned dataset on a
+separate Kali Linux VMware installation. Two new `voip-like` runs, one modern
+AES-GCM tunnel (`kali-modern-02`) and one CBC tunnel (`kali-cbc-02`), were
+analyzed without adding either capture to training. Each run's busiest ESP
+direction contained 40 packets. Both predictions were `voip-like` and neither
+abstained, matching the synthetic generator labels. The captures had already
+passed hash, packet-count, selected-IKE-transform, and two-direction ESP checks
+documented in [Phase 4 reproduction](PHASE4_REPRODUCTION.md).
+
+This is two runs of one synthetic traffic profile on a second Linux
+installation. The VM appears to share the original physical machine and the
+same operator performed the check. Other profiles, real applications,
+independent physical-host or developer evaluation, and reliable confidence
+calibration remain unverified.

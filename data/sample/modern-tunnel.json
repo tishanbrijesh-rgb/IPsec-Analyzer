@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "scenario": "modern-tunnel",
+  "scenario_version": "1.2",
+  "label_source": "generated scenario configuration; not model output",
+  "ground_truth": {
+    "mode": "tunnel",
+    "ike_proposal": "aes256gcm16-prfsha384-ecp384",
+    "esp_proposal": "aes256gcm16-ecp384",
+    "pfs_on_rekey": true
+  },
+  "capture_point": "outer client interface",
+  "capture_sha256": "af30fd79d36d123293953f6cc33580c2bd41ccafb1941ca163cc519da445b61d",
+  "capture_format": "pcap",
+  "packet_count": 10,
+  "ike_session_count": 1,
+  "esp_flow_count": 2,
+  "split_group": "wsl-modern-tunnel-01",
+  "verification": "outer packets and selected IKE/ESP observed; daemon configuration not independently attested"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "sih26160-dashboard",
+  "private": true,
+  "scripts": {
+    "build:motion": "esbuild ./dashboard/web/motion-src.js --bundle --format=iife --target=es2020 --minify --outfile=./dashboard/web/motion.bundle.js"
+  },
+  "dependencies": {
+    "motion": "^12.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

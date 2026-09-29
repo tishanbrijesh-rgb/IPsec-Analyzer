@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "scenario": "modern-tunnel",
+  "capture_sha256": "6ceae2a713d5bdddecb116b4216f83796c5b800185beb0aa6a792718681ede50",
+  "rekey_command": "swanctl --rekey --child protected",
+  "rekey_status": "completed successfully",
+  "child_sa_instance": 2,
+  "both_peers_installed": true,
+  "selected_child_esp": [
+    "AES_GCM_16-256/ECP_384",
+    "AES_GCM_16-256/ECP_384"
+  ],
+  "child_sa_dh_group": "ECP_384",
+  "verification_source": "swanctl --list-sas after Child SA rekey; not passive PCAP inference"
+}

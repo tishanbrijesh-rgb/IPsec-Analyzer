@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "scenario": "modern-tunnel",
+  "scenario_version": "1.2",
+  "label_source": "generated scenario configuration; not model output",
+  "ground_truth": {
+    "mode": "tunnel",
+    "ike_proposal": "aes256gcm16-prfsha384-ecp384",
+    "esp_proposal": "aes256gcm16-ecp384",
+    "pfs_on_rekey": true
+  },
+  "capture_point": "outer client interface",
+  "capture_sha256": "4edb2896bff59a3a0c6cca377c7f0f6fbdb7aaeb066b6b46a4262042d64766b3",
+  "capture_format": "pcap",
+  "packet_count": 47,
+  "ike_session_count": 1,
+  "esp_flow_count": 2,
+  "split_group": "phase4-messaging-04",
+  "verification": "outer packets and selected IKE/ESP observed; daemon configuration not independently attested",
+  "traffic_profile": "messaging-like",
+  "traffic_seed": 104,
+  "traffic_label_source": "synthetic generator command; packet window requires run verification"
+}

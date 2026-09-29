@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "scenario": "modern-transport",
+  "scenario_version": "1.2",
+  "label_source": "generated scenario configuration; not model output",
+  "ground_truth": {
+    "mode": "transport",
+    "ike_proposal": "aes256gcm16-prfsha384-ecp384",
+    "esp_proposal": "aes256gcm16-ecp384",
+    "pfs_on_rekey": true
+  },
+  "capture_point": "outer client interface",
+  "capture_sha256": "bcc0781cb0990bd327515337e174f0b4e80dc2d4c525b0f7dfa697400a3c713a",
+  "capture_format": "pcap",
+  "packet_count": 61,
+  "ike_session_count": 1,
+  "esp_flow_count": 2,
+  "split_group": "phase4-email-02",
+  "verification": "outer packets and selected IKE/ESP observed; daemon configuration not independently attested",
+  "traffic_profile": "email-like",
+  "traffic_seed": 102,
+  "traffic_label_source": "synthetic generator command; packet window requires run verification"
+}

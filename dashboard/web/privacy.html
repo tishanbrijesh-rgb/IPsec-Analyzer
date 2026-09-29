@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy | IPsec Analyzer</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="identity identity-link" href="/"><span class="identity-mark" aria-hidden="true">IP</span><span>IPsec Analyzer</span><span class="identity-divider"></span><span class="identity-sub">Privacy Policy</span></a>
+      <span class="scope-pill">LOCAL PROTOTYPE</span>
+    </header>
+    <main class="legal-main">
+      <a class="back-link" href="/">← Back to capture review</a>
+      <p class="eyebrow">PRODUCT INFORMATION</p>
+      <h1>Privacy Policy</h1>
+      <p class="legal-lead">This page explains how the current locally hosted prototype handles capture data. It describes the software as built, rather than a future hosted service.</p>
+      <p class="legal-date">Updated 29 September 2026</p>
+
+      <section><h2>Data you provide</h2><p>When you select a PCAP or PCAPNG file, your browser sends the complete file to the analyzer running on the same computer. Captures can contain network addresses, packet payloads, timestamps and other sensitive information. Only analyze traffic you are authorized to handle.</p></section>
+      <section><h2>How the data is used</h2><p>The server reads the capture to identify visible IKE, ESP and AH traffic and to create packet, session, flow and rule results. Uploaded capture bytes are written to a temporary file during analysis and that file is removed when analysis finishes or fails. The current software does not use uploaded captures to train a model.</p></section>
+      <section><h2>What remains after analysis</h2><p>Results, including endpoint addresses, packet references and findings, stay in server memory. The server keeps up to 16 recent results. Older results are evicted when that limit is reached, and all in-memory results disappear when the server stops. The current interface has no individual result deletion control. The selected file remains on your own computer.</p></section>
+      <section><h2>Sharing and external services</h2><p>The current application makes no analytics or advertising requests and does not send captures or results to an external service. It uses no account cookies. The server is designed to bind to the local loopback address and rejects nonlocal clients. If an operator changes how it is hosted, these statements must be reviewed before use.</p></section>
+      <section><h2>Logs and reports</h2><p>The local web server may log request paths, client address, status codes and timing in its terminal output. Reports can be downloaded while their result remains in memory. Shared-copy exports omit capture identifiers, endpoint addresses and SPI values, but still include packet counts, rule findings and other metadata. Review every report before sharing it.</p></section>
+      <section><h2>Questions and public deployment</h2><p>For questions about a specific installation, contact the person operating that installation. This repository does not identify a public service operator or support address. A public deployment requires an operator-specific privacy notice, contact details and a legal review before accepting real user captures.</p></section>
+    </main>
+    <footer><span>SIH26160 · Local prototype</span><nav aria-label="Legal pages"><a href="/">Capture review</a><a href="/terms">Terms and Conditions</a></nav></footer>
+  </div>
+</body>
+</html>

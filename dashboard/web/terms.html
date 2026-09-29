@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terms and Conditions | IPsec Analyzer</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="identity identity-link" href="/"><span class="identity-mark" aria-hidden="true">IP</span><span>IPsec Analyzer</span><span class="identity-divider"></span><span class="identity-sub">Terms and Conditions</span></a>
+      <span class="scope-pill">LOCAL PROTOTYPE</span>
+    </header>
+    <main class="legal-main">
+      <a class="back-link" href="/">← Back to capture review</a>
+      <p class="eyebrow">PRODUCT INFORMATION</p>
+      <h1>Terms and Conditions</h1>
+      <p class="legal-lead">These terms describe use of the current local demonstration. They do not define terms for a public or commercial service.</p>
+      <p class="legal-date">Updated 29 September 2026</p>
+
+      <section><h2>Permitted use</h2><p>Use this analyzer only with captures and network environments you own or are authorized to inspect. Follow the rules that apply to your network and the data inside its captures. Do not use the tool to access, collect or disclose another party's traffic without authorization.</p></section>
+      <section><h2>Prototype scope</h2><p>The software accepts offline PCAP and PCAPNG files through a local interface. It parses selected visible IKEv1 and IKEv2 metadata, groups ESP and AH flows, and evaluates three narrow IKE rules. A one-host synthetic traffic classifier may infer a profile or abstain. Live capture, decryption, externally validated application classification and a comprehensive security score are not available.</p></section>
+      <section><h2>How to interpret results</h2><p>Findings describe evidence in the supplied capture. A missing handshake or encrypted field can leave important configuration unknown. A passing rule is not proof that a deployment is secure or compliant. Review the packet evidence and limitations before making operational or security decisions.</p></section>
+      <section><h2>Data handling</h2><p>Captures are processed locally by the running server and temporary upload files are removed after analysis. Result metadata remains in memory until eviction or server shutdown. See the <a href="/privacy">Privacy Policy</a> for the current handling details.</p></section>
+      <section><h2>Availability and changes</h2><p>This is a development prototype. Features, data formats and availability can change as the project develops. Keep your own copies of captures and reports needed for an investigation. The in-memory result store is not durable storage.</p></section>
+      <section><h2>Before public use</h2><p>No public service operator, support contact, governing law or commercial terms have been specified for this repository. These local prototype terms must be replaced or reviewed by the operator before the software is offered to others as a hosted service.</p></section>
+    </main>
+    <footer><span>SIH26160 · Local prototype</span><nav aria-label="Legal pages"><a href="/">Capture review</a><a href="/privacy">Privacy Policy</a></nav></footer>
+  </div>
+</body>
+</html>

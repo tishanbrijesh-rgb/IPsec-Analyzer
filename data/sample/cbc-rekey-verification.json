@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "scenario": "cbc-no-pfs",
+  "capture_sha256": "2e5f7ae9799fb9035e6f9961cc1851e5bc19897c64ee8cf8fff7f81e39092c94",
+  "rekey_command": "swanctl --rekey --child protected",
+  "rekey_status": "completed successfully",
+  "child_sa_instance": 2,
+  "both_peers_installed": true,
+  "selected_child_esp": [
+    "AES_CBC-128/HMAC_SHA2_256_128",
+    "AES_CBC-128/HMAC_SHA2_256_128"
+  ],
+  "child_sa_dh_group": null,
+  "verification_source": "swanctl --list-sas after Child SA rekey; not passive PCAP inference"
+}

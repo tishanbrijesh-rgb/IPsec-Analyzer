@@ -1,0 +1,193 @@
+import asyncio
+import json
+
+from ipsec_analyzer.api.app import app
+import ipsec_analyzer.api.app as api_module
+from tests.fixtures.build_fixtures import ipv4_packet, udp, write_pcap
+from tests.test_ike_parser import ike_sa_message
+
+
+def request(method: str, path: str, body: bytes = b"", headers=None, client="127.0.0.1"):
+    route, _, query = path.partition("?")
+    async def run():
+        sent = []
+        received = False
+
+        async def receive():
+            nonlocal received
+            if received:
+                return {"type": "http.disconnect"}
+            received = True
+            return {"type": "http.request", "body": body, "more_body": False}
+
+        async def send(message):
+            sent.append(message)
+
+        scope = {
+            "type": "http", "asgi": {"version": "3.0"}, "method": method,
+            "path": route, "raw_path": route.encode(), "query_string": query.encode(),
+            "headers": [(key.lower().encode(), value.encode()) for key, value in {"host": "127.0.0.1:8000", **(headers or {})}.items()],
+            "client": (client, 1), "server": ("127.0.0.1", 8000), "scheme": "http",
+            "http_version": "1.1",
+        }
+        await app(scope, receive, send)
+        status = next(message["status"] for message in sent if message["type"] == "http.response.start")
+        content = b"".join(message.get("body", b"") for message in sent if message["type"] == "http.response.body")
+        return status, content
+
+    return asyncio.run(run())
+
+
+def test_upload_and_get(tmp_path):
+    capture = write_pcap(tmp_path / "api.pcap").read_bytes()
+    status, body = request("POST", "/api/analyses", capture, {"content-type": "application/octet-stream"})
+    assert status == 201
+    payload = json.loads(body)
+    assert payload["result"]["capture"]["packet_count"] == 5
+    assert "raw_frames" not in body.decode()
+    assert "wire_hash" not in body.decode()
+    assert payload["result"]["evidence"]
+    status, body = request("GET", "/api/analyses/" + payload["id"])
+    assert status == 200
+    assert json.loads(body)["capture"]["sha256"]
+
+
+def test_result_eviction_and_restart_lifecycle(tmp_path, monkeypatch):
+    original = api_module._results.copy()
+    api_module._results.clear()
+    monkeypatch.setattr(api_module, "MAX_RESULTS", 2)
+    try:
+        capture = write_pcap(tmp_path / "bounded-results.pcap").read_bytes()
+        ids = []
+        for _ in range(3):
+            status, body = request("POST", "/api/analyses", capture,
+                                   {"content-type": "application/octet-stream"})
+            assert status == 201
+            ids.append(json.loads(body)["id"])
+        assert len(api_module._results) == 2
+        for suffix in ("", "/status", "/report?format=json"):
+            status, _ = request("GET", "/api/analyses/" + ids[0] + suffix)
+            assert status == 404
+        status, _ = request("GET", "/api/analyses/" + ids[-1])
+        assert status == 200
+        api_module._results.clear()  # In-memory results vanish on restart.
+        status, _ = request("GET", "/api/analyses/" + ids[-1])
+        assert status == 404
+    finally:
+        api_module._results.clear()
+        api_module._results.update(original)
+
+
+def test_upload_rejects_bad_input_and_remote_client():
+    status, _ = request("POST", "/api/analyses", b"bad", {"content-type": "application/octet-stream"})
+    assert status == 422
+    status, _ = request("POST", "/api/analyses", b"bad", {"content-type": "text/plain"})
+    assert status == 415
+    status, _ = request("GET", "/api/health", client="203.0.113.7")
+    assert status == 403
+
+
+def test_invalid_upload_removes_temporary_capture(tmp_path, monkeypatch):
+    monkeypatch.setattr(api_module.tempfile, "tempdir", str(tmp_path))
+    status, _ = request("POST", "/api/analyses", b"not a capture",
+                        {"content-type": "application/octet-stream"})
+    assert status == 422
+    assert not list(tmp_path.glob("ipsec-analysis-*"))
+
+
+def test_upload_over_16_mib_rejected_without_retaining_raw_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(api_module.tempfile, "tempdir", str(tmp_path))
+    status, _ = request("POST", "/api/analyses",
+                        b"x" * (api_module.MAX_UPLOAD_BYTES + 1),
+                        {"content-type": "application/octet-stream"})
+    assert status == 413
+    assert not list(tmp_path.glob("ipsec-analysis-*"))
+
+
+def test_dashboard_and_security_headers():
+    status, body = request("GET", "/")
+    assert status == 200
+    assert b"Investigate a capture" in body
+    assert b'href="/privacy"' in body
+    assert b'href="/terms"' in body
+    assert b"\xe2\x80\x94" not in body
+    for path, heading in (("/privacy", b"Privacy Policy"), ("/terms", b"Terms and Conditions")):
+        status, page = request("GET", path)
+        assert status == 200
+        assert heading in page
+        assert b'href="/"' in page
+        assert b"\xe2\x80\x94" not in page
+    status, _ = request("GET", "/api/health", headers={"host": "attacker.example"})
+    assert status == 403
+    status, _ = request(
+        "POST", "/api/analyses", b"bad",
+        {"content-type": "application/octet-stream", "origin": "https://other.example", "host": "127.0.0.1:8000"},
+    )
+    assert status == 403
+
+
+def test_phase6_resources_and_exports(tmp_path):
+    capture = write_pcap(tmp_path / "report.pcap").read_bytes()
+    status, body = request("POST", "/api/analyses", capture, {"content-type": "application/octet-stream"})
+    assert status == 201
+    created = json.loads(body)
+    analysis_id = created["id"]
+    result = created["result"]
+    assert created["status"] == "complete"
+    base = "/api/analyses/" + analysis_id
+    for suffix, key in (("/sessions", "sessions"), ("/flows", "flows"),
+                        ("/evidence", "evidence"), ("/findings", "findings")):
+        status, body = request("GET", base + suffix)
+        assert status == 200
+        assert json.loads(body) == json.loads(json.dumps(result[key]))
+    status, body = request("GET", base + "/status")
+    assert status == 200 and json.loads(body)["status"] == "complete"
+    evidence_id = result["rule_evaluations"][0]["evidence_ids"][0]
+    status, body = request("GET", base + "/evidence/" + evidence_id)
+    assert status == 200 and json.loads(body)["id"] == evidence_id
+    status, body = request("GET", base + "/evidence/missing")
+    assert status == 404
+    for format, marker in (("text", b"Executive summary"), ("html", b"<html"),
+                           ("pdf", b"%PDF-1.4"), ("json", b'"capture"')):
+        status, body = request("GET", base + "/report?format=" + format)
+        assert status == 200 and marker in body
+    status, body = request("GET", base + "/report?format=html&redacted=true")
+    assert status == 200
+    assert result["capture"]["sha256"].encode() not in body
+    assert result["capture"]["id"].encode() not in body
+    assert b"192.0.2.1" not in body
+    status, redacted_json = request("GET", base + "/report?format=json&redacted=true")
+    assert status == 200
+    assert result["capture"]["sha256"].encode() not in redacted_json
+    assert result["capture"]["id"].encode() not in redacted_json
+    assert b"192.0.2.1" not in redacted_json
+    shared = json.loads(redacted_json)
+    assert shared["summary"]["packet_count"] == result["capture"]["packet_count"]
+    assert all(flow["spi"] is None for flow in shared["flows"])
+
+
+def test_failed_finding_traces_to_api_evidence_and_report(tmp_path):
+    request_packet = ipv4_packet(17, udp(500, 500, ike_sa_message()))
+    response = bytearray(ike_sa_message(True))
+    response[46:48] = b"\x00\x02"
+    capture = write_pcap(tmp_path / "weak.pcap", [request_packet, ipv4_packet(17, udp(500, 500, bytes(response)))]).read_bytes()
+    status, body = request("POST", "/api/analyses", capture, {"content-type": "application/octet-stream"})
+    assert status == 201
+    payload = json.loads(body)
+    base = "/api/analyses/" + payload["id"]
+    status, body = request("GET", base + "/findings")
+    assert status == 200
+    finding = next(item for item in json.loads(body) if item["rule_id"] == "IPSEC-IKEV2-DES-001")
+    assert finding["remediation"] and finding["evidence_packets"] == [2]
+    status, body = request("GET", base + "/evidence/" + finding["evidence_ids"][0])
+    assert status == 200 and json.loads(body)["packet_indices"] == [2]
+    status, report = request("GET", base + "/report?format=html")
+    assert status == 200
+    assert finding["rule_id"].encode() in report
+    assert finding["remediation"].encode() in report
+    status, report_json = request("GET", base + "/report?format=json")
+    assert status == 200
+    exported = json.loads(report_json)
+    assert exported["summary"]["failed_rule_finding_count"] == 1
+    assert any(item["rule_id"] == finding["rule_id"] and item["remediation"] == finding["remediation"]
+               for item in exported["rule_evaluations"])

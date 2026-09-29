@@ -1,0 +1,6 @@
+*.sh text eol=lf
+*.py text eol=lf
+*.pcap binary
+*.pcapng binary
+*.docx binary
+*.md whitespace=-blank-at-eol

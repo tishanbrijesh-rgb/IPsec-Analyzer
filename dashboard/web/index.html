@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>IPsec Analyzer | Capture Review</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/theme.css">
+  <script src="/assets/motion.bundle.js" defer></script>
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to capture workspace</a>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="identity"><span class="identity-mark" aria-hidden="true">IP</span><span>IPsec Analyzer</span><span class="identity-divider"></span><span class="identity-sub">Capture review</span></div>
+      <div class="topbar-right"><span class="scope-pill">LOCAL WORKSPACE</span><span class="version">v0.1</span></div>
+    </header>
+
+    <main id="main-content">
+      <section class="page-heading" aria-labelledby="page-title">
+        <div class="heading-copy"><p class="eyebrow">CAPTURE WORKSPACE / OFFLINE ANALYSIS</p><h1 id="page-title">Investigate a capture</h1><p class="intro">Inspect visible IKE and ESP behavior, then trace each assessment to packet evidence.</p></div>
+        <div class="capture-control">
+          <form id="upload-form" class="upload-form">
+            <label class="file-control" for="capture-file"><span id="file-name">Select a PCAP or PCAPNG</span><span class="file-browse">Browse</span></label>
+            <input id="capture-file" type="file" accept=".pcap,.pcapng,application/octet-stream" aria-describedby="capture-guidance selected-file" required>
+            <button id="analyze-button" class="primary-button" type="submit">Analyze capture</button>
+          </form>
+          <p id="capture-guidance" class="capture-guidance">PCAP or PCAPNG · 16 MiB maximum · analyzed by the local service</p>
+          <p id="selected-file" class="selected-file" hidden></p>
+        </div>
+      </section>
+
+      <div id="status" class="status" role="status" aria-live="polite" tabindex="-1"><span id="status-message">Choose a local capture to begin. Raw bytes are analyzed in this session and discarded after processing.</span><button id="retry-select" type="button" hidden>Choose another capture</button></div>
+      <noscript><p class="status error">JavaScript is required for browser upload and analysis. Enable it, then choose a PCAP or PCAPNG file.</p></noscript>
+      <section id="empty-guide" class="empty-guide" aria-label="Analysis workflow">
+        <div class="guide-header"><span class="guide-index">INVESTIGATION PATH / 01–03</span><strong>From packets to proof.</strong><p>A local capture becomes a traceable assessment. Each conclusion stays linked to the evidence the analyzer can actually see.</p></div>
+        <div class="signal-map" aria-hidden="true"><span class="map-node map-capture">PCAP<span>01 / INPUT</span></span><span class="map-link map-link-one"></span><span class="map-node map-ike">IKE<span>02 / CONTROL</span></span><span class="map-link map-link-two"></span><span class="map-node map-esp">ESP<span>03 / DATA</span></span><span class="map-output">EVIDENCE <b>→</b> ASSESSMENT</span></div>
+        <div class="guide-steps"><div><span class="guide-index">01 / CAPTURE</span><strong>Load</strong><p>Choose a local PCAP or PCAPNG. Raw bytes are discarded after analysis.</p></div><div><span class="guide-index">02 / TRACE</span><strong>Inspect</strong><p>Follow findings to rules, evidence states and packet references.</p></div><div><span class="guide-index">03 / REPORT</span><strong>Share</strong><p>Export a full report or a redacted copy for external review.</p></div></div>
+      </section>
+
+      <section id="results" class="results" hidden aria-label="Analysis results">
+        <div class="provenance-rail" aria-label="Capture provenance">
+          <div class="provenance-item"><span class="rail-label">ANALYSIS</span><strong id="analysis-state">Complete</strong></div>
+          <div class="provenance-item"><span class="rail-label">CAPTURE ID</span><strong id="capture-id" class="mono">Pending</strong></div>
+          <div class="provenance-item"><span class="rail-label">FORMAT</span><strong id="rail-format">Pending</strong></div>
+          <div class="provenance-item"><span class="rail-label">ANALYZER</span><strong id="analysis-version">Pending</strong></div>
+        </div>
+        <div class="summary-strip">
+          <div class="metric"><span class="metric-label">Packets</span><strong id="metric-packets">Pending</strong></div>
+          <div class="metric"><span class="metric-label">IKE sessions</span><strong id="metric-sessions">Pending</strong></div>
+          <div class="metric"><span class="metric-label">ESP / AH flows</span><strong id="metric-flows">Pending</strong></div>
+          <div class="metric"><span class="metric-label">Rule findings</span><strong id="metric-findings">Pending</strong></div>
+          <div class="metric metric-score"><span class="metric-label">Security score</span><strong id="metric-score">Unavailable</strong><span class="metric-note">Coverage too limited</span></div>
+        </div>
+
+        <nav class="result-nav" aria-label="Analysis sections"><a href="#findings-title">Assessment</a><a href="#sessions-title">IKE sessions</a><a href="#flows-title">Flows</a><a href="#inference-title">Inference</a><a href="#evidence-title">Evidence</a><a href="#packets-title">Packets</a></nav>
+
+        <div class="content-grid">
+          <div class="main-column">
+            <section class="panel" aria-labelledby="findings-title">
+              <div class="section-heading"><div><p class="eyebrow">ASSESSMENT</p><h2 id="findings-title" tabindex="-1">Rule evaluations</h2></div><div class="assessment-tools"><label for="rule-filter">Show</label><select id="rule-filter" aria-controls="findings-body"><option value="all">All statuses</option><option value="FAIL">Failed</option><option value="UNKNOWN">Unknown</option><option value="PASS">Passed</option><option value="NOT_APPLICABLE">Not applicable</option></select><span id="finding-count" class="count-label"></span></div></div>
+              <div class="table-wrap"><table><thead><tr><th>Rule</th><th>Status</th><th>Packets</th><th>Assessment and trace</th></tr></thead><tbody id="findings-body"></tbody></table></div>
+            </section>
+            <section class="panel" aria-labelledby="sessions-title">
+              <div class="section-heading"><div><p class="eyebrow">CONTROL PLANE</p><h2 id="sessions-title">IKE sessions</h2></div></div>
+              <div class="table-wrap"><table><thead><tr><th>Initiator SPI</th><th>Version</th><th>Requests</th><th>Responses</th><th>Selected proposal</th></tr></thead><tbody id="sessions-body"></tbody></table></div>
+            </section>
+            <section class="panel" aria-labelledby="flows-title">
+              <div class="section-heading"><div><p class="eyebrow">DATA PLANE</p><h2 id="flows-title">Directional flows</h2></div></div>
+              <div class="table-wrap"><table><thead><tr><th>Direction</th><th>Type</th><th>Encapsulation</th><th>SPI</th><th>Packets</th><th>Captured frame bytes</th></tr></thead><tbody id="flows-body"></tbody></table></div>
+            </section>
+            <section class="panel" aria-labelledby="inference-title">
+              <div class="section-heading"><div><p class="eyebrow">MODEL OUTPUT</p><h2 id="inference-title">Encrypted traffic estimates</h2></div></div>
+              <p class="panel-note">These are INFERRED synthetic profile estimates, not observed application protocols. Unknown means the model abstained.</p>
+              <div class="table-wrap"><table><thead><tr><th>Flow</th><th>Estimate / abstention reason</th><th>Model / pilot confidence</th><th>Packet evidence</th></tr></thead><tbody id="inference-body"></tbody></table></div>
+            </section>
+            <section class="panel" aria-labelledby="evidence-title">
+              <div class="section-heading"><div><p class="eyebrow">PROVENANCE</p><h2 id="evidence-title">Rule evidence</h2></div></div>
+              <div class="table-wrap"><table><thead><tr><th>Evidence ID</th><th>State</th><th>Value or reason</th><th>Packets</th></tr></thead><tbody id="evidence-body"></tbody></table></div>
+            </section>
+            <section class="panel" aria-labelledby="packets-title">
+              <div class="section-heading"><div><p class="eyebrow">PACKET REFERENCES</p><h2 id="packets-title">Referenced packets</h2></div></div>
+              <p class="panel-note">Metadata for packets cited by rule evaluations or a selected IKE response. Frame bytes and payloads are not shown.</p>
+              <div class="table-wrap"><table><thead><tr><th>Packet</th><th>Kind</th><th>Source → destination</th><th>Captured length</th><th>Notes</th></tr></thead><tbody id="packets-body"></tbody></table></div>
+              <p id="packets-truncated" class="panel-note" hidden>Only the first 5,000 referenced packets are shown.</p>
+            </section>
+          </div>
+          <aside class="side-column">
+            <section class="panel side-panel" aria-labelledby="scope-title">
+              <p class="eyebrow">EVIDENCE BOUNDARY</p><h2 id="scope-title">Assessment scope</h2>
+              <p class="side-copy">Rules evaluate visible IKE evidence. The model estimates synthetic traffic profiles separately and does not establish hidden VPN settings.</p>
+              <div class="coverage-line"><span>Rules implemented</span><strong id="implemented-rules">1</strong></div>
+              <div class="coverage-line"><span>Session rule coverage</span><strong id="rule-coverage">Pending</strong></div>
+              <p id="rule-coverage-detail" class="small-note"></p>
+              <p class="small-note">A passing rule means only its condition was not seen in the analyzed session. It does not establish deployment compliance.</p>
+              <div class="coverage-line"><span>AI traffic inference</span><strong id="ai-status">Unknown</strong></div>
+              <p id="ai-reason" class="small-note"></p>
+            </section>
+            <section class="panel side-panel" aria-labelledby="capture-title">
+              <p class="eyebrow">CAPTURE</p><h2 id="capture-title">Source details</h2>
+              <dl class="source-details"><dt>Format</dt><dd id="source-format">Pending</dd><dt>SHA-256</dt><dd id="source-hash" class="hash">Pending</dd></dl>
+              <div id="report-actions" class="report-actions" hidden>
+                <div class="report-group"><h3>Full analysis</h3><p>Includes capture identifiers, endpoints and SPI values.</p><div class="report-links"><a id="report-link" href="#">Text</a><a id="html-link" href="#">HTML</a><a id="pdf-link" href="#">PDF</a><a id="json-link" href="#">JSON</a></div></div>
+                <div class="report-group"><h3>Shared copy</h3><p>Redacts capture identifiers, endpoints and SPI values.</p><div class="report-links"><a id="redacted-link" href="#">PDF</a><a id="redacted-json-link" href="#">JSON</a></div></div>
+              </div>
+            </section>
+            <section class="panel side-panel" aria-labelledby="limits-title">
+              <p class="eyebrow">INTERPRETATION</p><h2 id="limits-title">Known limits</h2><ul id="limitations" class="limitations"></ul>
+            </section>
+          </aside>
+        </div>
+      </section>
+    </main>
+    <footer><span>SIH26160 · Evidence-first IPsec analysis</span><nav aria-label="Legal pages"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a></nav></footer>
+  </div>
+</body>
+</html>

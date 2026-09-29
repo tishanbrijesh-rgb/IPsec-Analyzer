@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "scenario": "cbc-no-pfs",
+  "scenario_version": "1.2",
+  "label_source": "generated scenario configuration; not model output",
+  "ground_truth": {
+    "mode": "tunnel",
+    "ike_proposal": "aes128-sha256-prfsha256-modp2048",
+    "esp_proposal": "aes128-sha256",
+    "pfs_on_rekey": false
+  },
+  "capture_point": "outer client interface",
+  "capture_sha256": "16f7c05b42af94453cb65ee49127c18b1bc063a0c5de7cc832d4b9831dfad0e3",
+  "capture_format": "pcap",
+  "packet_count": 84,
+  "ike_session_count": 1,
+  "esp_flow_count": 2,
+  "split_group": "phase4-video-05",
+  "verification": "outer packets and selected IKE/ESP observed; daemon configuration not independently attested",
+  "traffic_profile": "video-like",
+  "traffic_seed": 105,
+  "traffic_label_source": "synthetic generator command; packet window requires run verification"
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "scenario": "modern-udp-encap",
+  "scenario_version": "1.2",
+  "label_source": "generated scenario configuration; not model output",
+  "ground_truth": {
+    "mode": "tunnel",
+    "ike_proposal": "aes256gcm16-prfsha384-ecp384",
+    "esp_proposal": "aes256gcm16-ecp384",
+    "pfs_on_rekey": true,
+    "forced_udp_encapsulation": true
+  },
+  "capture_point": "outer client interface",
+  "capture_sha256": "b39acfd775d13bacb7796a574d521ed40c4afd5c4e10b9b96119c4d5f001b36f",
+  "capture_format": "pcap",
+  "packet_count": 10,
+  "ike_session_count": 1,
+  "esp_flow_count": 2,
+  "split_group": "phase4-udp-encap-01",
+  "verification": "outer packets and selected IKE/ESP observed; daemon configuration not independently attested",
+  "traffic_profile": "icmp",
+  "traffic_seed": 0,
+  "traffic_label_source": "synthetic generator command; packet window requires run verification"
+}

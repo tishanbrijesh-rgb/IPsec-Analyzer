@@ -1,0 +1,410 @@
+{
+  "schema_version": "1.0",
+  "purpose": "controlled lab pilot; not a validated ML benchmark",
+  "split_unit": "complete run",
+  "host_scope": "one WSL2 host",
+  "counts": {
+    "reference": 14,
+    "test": 6,
+    "train": 18,
+    "validation": 6
+  },
+  "records": [
+    {
+      "capture": "cbc-no-pfs.pcap",
+      "record": "cbc-no-pfs.json",
+      "sha256": "80873fec17e7d44dd869ecd179e9b9b8a64d9a94dd71c293b6371e40f4c9e4e8",
+      "split_group": "wsl-cbc-no-pfs-01",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": null,
+      "partition": "reference"
+    },
+    {
+      "capture": "cbc-rekey.pcap",
+      "record": "cbc-rekey.json",
+      "sha256": "2e5f7ae9799fb9035e6f9961cc1851e5bc19897c64ee8cf8fff7f81e39092c94",
+      "split_group": "wsl-cbc-rekey-01",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": null,
+      "partition": "reference"
+    },
+    {
+      "capture": "email-like.pcap",
+      "record": "email-like.json",
+      "sha256": "83bcee139ad8c098491226f599706eef742188206d3f3d5f6bf1ff42ec9952a5",
+      "split_group": "wsl-email-like-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "email-like",
+      "partition": "reference"
+    },
+    {
+      "capture": "icmp.pcap",
+      "record": "icmp.json",
+      "sha256": "8257ac1f30410e0cd0b274ad6ac52d163d4008ce4e265dc21eb043a7275f300e",
+      "split_group": "wsl-icmp-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "icmp",
+      "partition": "reference"
+    },
+    {
+      "capture": "messaging-like.pcap",
+      "record": "messaging-like.json",
+      "sha256": "2506330fec3a1a0b2e5076b89d91391efa8c27b97665d6dcf768d5998c9ff7ec",
+      "split_group": "wsl-messaging-like-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "messaging-like",
+      "partition": "reference"
+    },
+    {
+      "capture": "modern-rekey.pcap",
+      "record": "modern-rekey.json",
+      "sha256": "6ceae2a713d5bdddecb116b4216f83796c5b800185beb0aa6a792718681ede50",
+      "split_group": "wsl-modern-rekey-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": null,
+      "partition": "reference"
+    },
+    {
+      "capture": "modern-transport.pcap",
+      "record": "modern-transport.json",
+      "sha256": "ba0e1dce71cd90800e273f500c610367715f6f67a38de74c7ca39e3a297b6c4f",
+      "split_group": "wsl-modern-transport-01",
+      "scenario": "modern-transport",
+      "traffic_profile": null,
+      "partition": "reference"
+    },
+    {
+      "capture": "modern-tunnel.pcap",
+      "record": "modern-tunnel.json",
+      "sha256": "af30fd79d36d123293953f6cc33580c2bd41ccafb1941ca163cc519da445b61d",
+      "split_group": "wsl-modern-tunnel-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": null,
+      "partition": "reference"
+    },
+    {
+      "capture": "phase4-email-01.pcap",
+      "record": "phase4-email-01.json",
+      "sha256": "56ee4a0551c86692e4df1ac235ebeb6b96ef7e334ca9950864ef096b2d61b77d",
+      "split_group": "phase4-email-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "email-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-email-02.pcap",
+      "record": "phase4-email-02.json",
+      "sha256": "bcc0781cb0990bd327515337e174f0b4e80dc2d4c525b0f7dfa697400a3c713a",
+      "split_group": "phase4-email-02",
+      "scenario": "modern-transport",
+      "traffic_profile": "email-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-email-03.pcap",
+      "record": "phase4-email-03.json",
+      "sha256": "d75556ee503dce8a95d0f61030e5fa2b69e699a686f5317b7bd485cb0963e7c9",
+      "split_group": "phase4-email-03",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "email-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-email-04.pcap",
+      "record": "phase4-email-04.json",
+      "sha256": "7fbc5ece839d8202835ddb8af111cc31cb2f6c6f7d459d45f8cb14c1e2575541",
+      "split_group": "phase4-email-04",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "email-like",
+      "partition": "validation"
+    },
+    {
+      "capture": "phase4-email-05.pcap",
+      "record": "phase4-email-05.json",
+      "sha256": "62309e71e7fc986e4585f97c301ea8f821f5ccdfe15bad0e4dd8daef8f343091",
+      "split_group": "phase4-email-05",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "email-like",
+      "partition": "test"
+    },
+    {
+      "capture": "phase4-icmp-01.pcap",
+      "record": "phase4-icmp-01.json",
+      "sha256": "a3925f0e19f5358bff40bebb256e753c30e732677521e2f7669f3d7a6f030942",
+      "split_group": "phase4-icmp-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "icmp",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-icmp-02.pcap",
+      "record": "phase4-icmp-02.json",
+      "sha256": "127222635c52d61f90a9817c8cfe46e734ada08313ae4121a6226558a7fcd6a3",
+      "split_group": "phase4-icmp-02",
+      "scenario": "modern-transport",
+      "traffic_profile": "icmp",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-icmp-03.pcap",
+      "record": "phase4-icmp-03.json",
+      "sha256": "4d27caf593a2e65424e7227a6065777d1e44efb888439bdc938750fce7b86722",
+      "split_group": "phase4-icmp-03",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "icmp",
+      "partition": "validation"
+    },
+    {
+      "capture": "phase4-icmp-04.pcap",
+      "record": "phase4-icmp-04.json",
+      "sha256": "7499293c879b25e92c819004eaf0e8707e9e52bc6c9809b690a3dedf19be9129",
+      "split_group": "phase4-icmp-04",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "icmp",
+      "partition": "test"
+    },
+    {
+      "capture": "phase4-icmp-05.pcap",
+      "record": "phase4-icmp-05.json",
+      "sha256": "2943eec9ff2d7eb6316d19dd6cf1bf46e64a4f3319b9e7955f35ca178386208c",
+      "split_group": "phase4-icmp-05",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "icmp",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-ipv6-01.pcap",
+      "record": "phase4-ipv6-01.json",
+      "sha256": "aa44d37aee6a1af60f1b3d4491ece4a4a553f80dd633ef769cc9d6a270cc1f92",
+      "split_group": "phase4-ipv6-01",
+      "scenario": "modern-v6-tunnel",
+      "traffic_profile": "icmp",
+      "partition": "reference"
+    },
+    {
+      "capture": "phase4-ipv6-02.pcap",
+      "record": "phase4-ipv6-02.json",
+      "sha256": "3cae9f68daab2634d048bdc6d4821df37f826dbc018b738348e07eecdc6cd691",
+      "split_group": "phase4-ipv6-02",
+      "scenario": "modern-v6-tunnel",
+      "traffic_profile": "voip-like",
+      "partition": "reference"
+    },
+    {
+      "capture": "phase4-messaging-01.pcap",
+      "record": "phase4-messaging-01.json",
+      "sha256": "139680a1ae10fb5bf425cf219bee2c4c743538682c68f05f394ef047827a35e4",
+      "split_group": "phase4-messaging-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "messaging-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-messaging-02.pcap",
+      "record": "phase4-messaging-02.json",
+      "sha256": "81cfd845571e67333484d4306e9be0d8a6142cfc4343bad001cb88f7205b26f7",
+      "split_group": "phase4-messaging-02",
+      "scenario": "modern-transport",
+      "traffic_profile": "messaging-like",
+      "partition": "validation"
+    },
+    {
+      "capture": "phase4-messaging-03.pcap",
+      "record": "phase4-messaging-03.json",
+      "sha256": "473fdf08b248ea6ba2417916a434e57e0cbc330e004e97b385944e1e54609a59",
+      "split_group": "phase4-messaging-03",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "messaging-like",
+      "partition": "test"
+    },
+    {
+      "capture": "phase4-messaging-04.pcap",
+      "record": "phase4-messaging-04.json",
+      "sha256": "4edb2896bff59a3a0c6cca377c7f0f6fbdb7aaeb066b6b46a4262042d64766b3",
+      "split_group": "phase4-messaging-04",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "messaging-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-messaging-05.pcap",
+      "record": "phase4-messaging-05.json",
+      "sha256": "69ee121d84625505e82dfedccbd77e7bccf4f4663f28d3663ad8d1065464c1b6",
+      "split_group": "phase4-messaging-05",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "messaging-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-udp-encap-01.pcap",
+      "record": "phase4-udp-encap-01.json",
+      "sha256": "b39acfd775d13bacb7796a574d521ed40c4afd5c4e10b9b96119c4d5f001b36f",
+      "split_group": "phase4-udp-encap-01",
+      "scenario": "modern-udp-encap",
+      "traffic_profile": "icmp",
+      "partition": "reference"
+    },
+    {
+      "capture": "phase4-video-01.pcap",
+      "record": "phase4-video-01.json",
+      "sha256": "9f3fa2d58a0ea30f95e3ee03d3b393a5ce635bdc7989fa7772abfa1a7c440e23",
+      "split_group": "phase4-video-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "video-like",
+      "partition": "validation"
+    },
+    {
+      "capture": "phase4-video-02.pcap",
+      "record": "phase4-video-02.json",
+      "sha256": "3f13400ffaef33eebaf85cd292150fbaaf0eddf825cbb358f8da2a7898c4571f",
+      "split_group": "phase4-video-02",
+      "scenario": "modern-transport",
+      "traffic_profile": "video-like",
+      "partition": "test"
+    },
+    {
+      "capture": "phase4-video-03.pcap",
+      "record": "phase4-video-03.json",
+      "sha256": "61610036e5a5a36665f4f71609bc8cfca575d04b3a2930d9cbdc650a3026a23d",
+      "split_group": "phase4-video-03",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "video-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-video-04.pcap",
+      "record": "phase4-video-04.json",
+      "sha256": "90f24d15b49fcdae715346606966e1bcb7d1cf8e2f25ae203d63cda1eae2cebc",
+      "split_group": "phase4-video-04",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "video-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-video-05.pcap",
+      "record": "phase4-video-05.json",
+      "sha256": "16f7c05b42af94453cb65ee49127c18b1bc063a0c5de7cc832d4b9831dfad0e3",
+      "split_group": "phase4-video-05",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "video-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-voip-01.pcap",
+      "record": "phase4-voip-01.json",
+      "sha256": "69c5241a3de5038a79a4c9c77a0fa053cec3c077df428ba1ddfedaa9ccb975de",
+      "split_group": "phase4-voip-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "voip-like",
+      "partition": "test"
+    },
+    {
+      "capture": "phase4-voip-02.pcap",
+      "record": "phase4-voip-02.json",
+      "sha256": "f3ddcb3d61cf456d1818224ee0879bb09c2714f92f993df27554c8059d01f18f",
+      "split_group": "phase4-voip-02",
+      "scenario": "modern-transport",
+      "traffic_profile": "voip-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-voip-03.pcap",
+      "record": "phase4-voip-03.json",
+      "sha256": "336e3454fe73b9937d175c49fcabe6af8fc5ae177a418d4e54bbdb4160a812c0",
+      "split_group": "phase4-voip-03",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "voip-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-voip-04.pcap",
+      "record": "phase4-voip-04.json",
+      "sha256": "a2c2cf8403085dd449ffed6ba5549ee22c5717cdcdecf472705c9c09b73701f8",
+      "split_group": "phase4-voip-04",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "voip-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-voip-05.pcap",
+      "record": "phase4-voip-05.json",
+      "sha256": "1fc327892d5f10643ad489c0b60aeaed49b176024ce0e60d7161e814edc048e4",
+      "split_group": "phase4-voip-05",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "voip-like",
+      "partition": "validation"
+    },
+    {
+      "capture": "phase4-web-01.pcap",
+      "record": "phase4-web-01.json",
+      "sha256": "7456d1ef9d1316b2aafa988bf68aa94ccc9cc5c7b6daae6d5763c7c9db5df3e8",
+      "split_group": "phase4-web-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "web-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-web-02.pcap",
+      "record": "phase4-web-02.json",
+      "sha256": "9eac10a4ac5f84b15ade272b94212162ee9bdad856aab2d6599cbe6f26028be0",
+      "split_group": "phase4-web-02",
+      "scenario": "modern-transport",
+      "traffic_profile": "web-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-web-03.pcap",
+      "record": "phase4-web-03.json",
+      "sha256": "1b337202b330084a158ece899989119d7669cd2fd0ade4bad9c2159f3ce39f59",
+      "split_group": "phase4-web-03",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "web-like",
+      "partition": "train"
+    },
+    {
+      "capture": "phase4-web-04.pcap",
+      "record": "phase4-web-04.json",
+      "sha256": "2648ffbfe5d5c070e073a100aa5169912c825d192d40cba2f69109c9bf29f95e",
+      "split_group": "phase4-web-04",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "web-like",
+      "partition": "validation"
+    },
+    {
+      "capture": "phase4-web-05.pcap",
+      "record": "phase4-web-05.json",
+      "sha256": "8837b2ddbb2a08b977e1d4293c58233d9243a318f97ecde327df166fcfa4ace3",
+      "split_group": "phase4-web-05",
+      "scenario": "cbc-no-pfs",
+      "traffic_profile": "web-like",
+      "partition": "test"
+    },
+    {
+      "capture": "video-like.pcap",
+      "record": "video-like.json",
+      "sha256": "ad0e027259339a31535c1c234eb1e83d6a5dbf62dfa99ddc0293059a2cdffe65",
+      "split_group": "wsl-video-like-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "video-like",
+      "partition": "reference"
+    },
+    {
+      "capture": "voip-like.pcap",
+      "record": "voip-like.json",
+      "sha256": "c0d14c683882b1af04e7cf46212b0bc63f033f3340e8e74a6bcfca95045876d5",
+      "split_group": "wsl-voip-like-01",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "voip-like",
+      "partition": "reference"
+    },
+    {
+      "capture": "web-like.pcap",
+      "record": "web-like.json",
+      "sha256": "db67cdf07ee9128370d1808d629940d99b44113f07ce39e2aa2b10299f237ff9",
+      "split_group": "wsl-web-like-02",
+      "scenario": "modern-tunnel",
+      "traffic_profile": "web-like",
+      "partition": "reference"
+    }
+  ]
+}

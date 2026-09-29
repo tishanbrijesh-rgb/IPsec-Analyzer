@@ -1,12 +1,35 @@
 # Implementation and Improvement Phases
 
-**Status:** working plan based on the current repository (28 September 2026).  
+**Status:** SIH26160-aligned working plan, revised 29 September 2026.  
 **Architecture:** [ARCHITECTURE.md](../../ARCHITECTURE.md) defines the system contracts and boundaries.  
 **Rule:** a phase is complete only when its exit checks pass and its limitations are documented.
 
 ## Current baseline
 
 The current implementation state and verified test count are tracked in [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md). This document defines phase gates and is not a claim that later phases are complete.
+
+## SIH26160 acceptance contract
+
+The problem statement asks for a working IPsec analysis platform, an AI
+classification engine, an interactive dashboard, security assessment reports,
+a demonstration video, technical documentation, and a training/testing dataset.
+The platform must cover offline and live input, varied VPN configurations,
+protocol and SA identification, encrypted-traffic estimates, assessment, a
+security/risk score, a threat matrix, and executive and technical output.
+
+| Requirement group | Delivery gate | Evidence boundary |
+| --- | --- | --- |
+| Testbed and dataset | Matrix of tunnel/transport, AES-128/256, GCM/CBC-HMAC, DH/PFS, IPv4/IPv6, and six traffic families, with manifests, hashes and split membership | Synthetic `*-like` profiles are not recordings of WhatsApp, VoIP or other real apps; AH is optional and must be marked covered or absent |
+| Capture and protocol identification | Offline PCAP/PCAPNG and bounded live streams identify visible IKE versions, selected algorithms, key exchange groups, SA and ESP/AH facts | Parse directly visible fields deterministically; encrypted Child SA settings and passive mode/PFS/replay/lifetime claims remain `UNKNOWN` without another source |
+| Configuration and security assessment | Versioned crypto, compliance, SA, lifetime, replay, PFS, cipher and metadata checks with packet/config provenance and remediation | A lab configuration or authorized configuration import may establish hidden settings; a PCAP alone may not |
+| Score and threat matrix | Documented coverage-aware formula, risk bands and evidence-linked threat entries in API, dashboard and both reports | Unknown controls reduce coverage and cannot silently count as pass; inferred traffic class cannot change deterministic crypto findings |
+| AI traffic inference | Versioned ESP feature model, per-class holdout metrics, calibration assessment, confidence/abstention, `unknown/other` | State `INFERRED`; report evaluated scope and sample counts; do not claim decryption or real-app identity from synthetic labels |
+| Submission | Reproducible demo, video, docs, sanitized dataset card and model evaluation | Every demo claim maps to a run record, test or explicit limitation |
+
+Protocol identification is an automatic hybrid pipeline: deterministic parsing
+for visible IKE/ESP/AH facts and ML only for encrypted-traffic estimates where
+the model has support. Do not add a model prediction for a protocol fact that
+the parser can establish exactly.
 
 ## Dependency path
 
@@ -104,7 +127,11 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Implement versioned rules for only fields that Phase 1 can establish reliably.
 - Emit `PASS`, `FAIL`, `UNKNOWN` and `NOT_APPLICABLE` rule evaluations.
 - Generate findings with severity rationale, evidence, impact and remediation.
-- Add coverage-aware scoring policy with documented formula and regression tests.
+- Define separate security posture and evidence coverage measures. Publish a
+  comprehensive risk score only after a versioned, coverage-aware formula,
+  minimum-evidence gate, risk bands and sensitivity tests are reviewed.
+- Map each applicable rule to a versioned threat category, affected asset,
+  evidence, impact and remediation; generate an explicit threat matrix.
 - Export canonical JSON plus a readable technical report; include limitations and unknowns.
 
 **Exit checks**
@@ -112,6 +139,8 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - A weak and a compliant test scenario produce expected rule outcomes.
 - Partial captures do not receive an unjustified compliant result or full-confidence score.
 - Every finding and score contribution can be traced to a rule version and evidence.
+- Score and threat-matrix rows agree across JSON, dashboard, executive and
+  technical reports; insufficient evidence withholds the score.
 
 **Ownership:** `rules/`, `assessment/`, `reporting/`, `docs/standards/`, `tests/rules/`.
 
@@ -121,9 +150,14 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 
 **Build**
 
-- Isolated strongSwan-based lab with tunnel/transport, IPv4/IPv6, selected AES suites, DH groups and PFS configurations.
-- Capture IKE plus ESP; add AH where practical and label its coverage explicitly.
-- Generate controlled VoIP-like, messaging-like, email, web, ICMP and video traffic.
+- Isolated strongSwan-based lab with a published coverage matrix for
+  tunnel/transport, IPv4/IPv6, AES-128/256, AES-GCM, AES-CBC plus HMAC,
+  multiple DH groups, and PFS on/off. Include positive and contrasting cases.
+- Capture IKE plus ESP and a separate normal-communication control trace.
+  Add AH when practical and label its coverage explicitly.
+- Generate controlled VoIP-like, messaging-like, email-like, web-like, ICMP and
+  video-like traffic. Use real application traffic only with authorized capture,
+  privacy review and source labels that identify the actual application.
 - Save scenario manifests, configuration versions, capture points, checksums and ground-truth labels.
 - Publish a dataset card and split data by run/tunnel/scenario.
 
@@ -132,6 +166,9 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Another developer can reproduce at least one strong and one weak configuration and obtain matching packet evidence.
 - Labels are derived from the testbed manifest, not predictions.
 - Secrets and private keys are absent from committed fixtures and reports.
+- The coverage matrix explicitly marks each requested configuration and traffic
+  family as verified, partial or unavailable; independent-installation checks
+  do not substitute for another-developer or physical-host evidence.
 
 **Ownership:** `testbed/`, `data/`, `scripts/dataset/`, `tests/integration/`.
 
@@ -146,12 +183,16 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Use scenario/run-level holdout; report per-class metrics and confusion matrix.
 - Measure calibration, define abstention threshold and include an unknown/other route.
 - Version model artifact, dataset and feature schema; keep inference separate from deterministic rules.
+- Evaluate the frozen model on new complete runs from another host or developer
+  and on authorized real traffic before making application-identity claims.
 
 **Exit checks**
 
 - Model reload and schema compatibility tests pass.
 - Reported metrics are reproducible on a held-out set.
 - Uncertain or out-of-scope flows abstain; model outputs are labeled `INFERRED`.
+- Report per-class precision/recall, confusion, coverage, abstentions and
+  confidence calibration with denominators for the SIH submission dataset.
 
 **Ownership:** `features/`, `ml/`, top-level `models/`, `data/`, `tests/`.
 
@@ -164,6 +205,8 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Analysis job API with validation, status, sessions, flows, evidence, findings and report endpoints.
 - Dashboard views for overview, exchanges, flows, cryptographic observations, findings, coverage and AI confidence.
 - Executive summary and technical JSON/HTML/PDF exports from one report model.
+- Render score status and threat matrix with evidence, coverage and explicit
+  unknown reasons in the dashboard and both report levels.
 - Empty, partial, failed and unknown states; report redaction for sharing.
 
 **Exit checks**
@@ -171,6 +214,8 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Uploading a known capture produces the same facts in API, dashboard and export.
 - Analyst can reach every finding's packet/rule evidence and remediation.
 - UI never displays inferred application type as a directly observed protocol fact.
+- Executive and technical exports carry the same score status, threat entries,
+  confidence scope and source references as the API.
 
 **Ownership:** `api/`, `dashboard/web/`, `reporting/`, `tests/integration/`.
 
@@ -183,7 +228,9 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Authorized interface capture feeding the same packet contract, with start/stop, dropped-packet accounting and bounded windows.
 - Resource limits, input validation, capture/report access control and retention controls.
 - Measure throughput and latency on named hardware; state supported limits.
-- Record a demo that recreates testbed traffic and traces a report finding back to evidence.
+- Record a demo that shows a strong and weak configuration, offline and bounded
+  live input, mode/config provenance, score or justified withheld state, threat
+  matrix, model prediction and abstention, then executive and technical exports.
 - Freeze technical documentation, dataset card, model evaluation and known limitations.
 
 **Exit checks**
@@ -191,8 +238,31 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Live and offline analysis of a controlled run agree on common observable facts.
 - Capture can be stopped cleanly and errors are visible.
 - Deliverables include prototype, AI engine, dashboard, reports, demo video, documentation and dataset.
+- A reviewer can follow the runbook, identify which SIH requirements were
+  demonstrated, and reproduce the accompanying evidence without accessing keys.
 
 **Ownership:** `ingestion/`, `api/`, `testbed/`, `docs/`, validation scripts.
+
+## Remaining work order for SIH alignment
+
+1. **Assessment contract:** define an authorized configuration input and its
+   provenance, then add the missing mode, lifetime, replay and PFS checks with
+   `UNKNOWN` for capture-only cases. Add standards sources and positive,
+   negative and partial-evidence tests before showing new findings.
+2. **Risk and threat output:** define the score denominator, evidence threshold,
+   weights and risk bands; implement the threat matrix and keep API, dashboard
+   and report outputs identical. Publish score only for cases that pass its
+   minimum-evidence gate.
+3. **Dataset and AI:** finish the requested configuration coverage matrix,
+   normal-traffic control and dataset card; obtain independent physical-host or
+   developer and authorized real-traffic evaluation. Preserve the current
+   synthetic pilot label until those results exist.
+4. **Product verification:** exercise supported offline and live paths,
+   responsive and keyboard dashboard review, score/unknown displays, threat
+   drill-down and redacted exports against the same fixtures.
+5. **Submission:** freeze the technical docs and limitations, run the written
+   demo on the delivery machine, record the video, and assemble every expected
+   deliverable with a traceable evidence index.
 
 ## Change control
 

@@ -5,7 +5,18 @@
 
 ## 1. Mission and requirements
 
-The system observes an IPsec deployment using a packet capture or live stream, parses visible protocol data, estimates selected hidden properties with uncertainty, evaluates security posture, and explains results to analysts. The [published SIH26160 listing](https://sih2026.vuce.in/ps/SIH26160) asks for a configurable VPN testbed, IKE/ESP captures (AH optional), protocol identification, encrypted traffic classification, security assessment, scores, reports, dashboard, dataset, documentation, prototype and demo video. That listing is an unofficial archive; an official statement takes precedence. The Word document in this repository is research input, not proof of its proposed accuracy or throughput.
+The system observes an IPsec deployment using a packet capture or live stream,
+parses visible protocol data, estimates encrypted traffic type with uncertainty,
+evaluates security posture, and explains results to analysts. The user-supplied
+SIH 2026 problem statement (ID 26160, "AI-Powered IPsec VPN Protocol Analyzer
+and Security Assessment Framework") asks for a configurable VPN testbed,
+IKE/ESP captures (AH optional), protocol identification, encrypted traffic
+classification, security assessment, a security/risk score and threat matrix,
+reports, dashboard, dataset, documentation, prototype and demo video. The Word
+document in this repository is research input, not proof of its proposed
+accuracy or throughput. The [SIH-aligned implementation gates](docs/design/IMPLEMENTATION_PHASES.md)
+define the acceptance work; [phase status](docs/design/IMPLEMENTATION_STATUS.md)
+records what actually runs.
 
 | Requirement | Owner | Output |
 | --- | --- | --- |
@@ -13,20 +24,25 @@ The system observes an IPsec deployment using a packet capture or live stream, p
 | PCAP/PCAPNG and live input | Ingestion | Normalized packet events |
 | IKE version, proposals, selection, SA properties | IKE parser/correlator | Exchange records and evidence |
 | ESP/AH, NAT-T, SPI, sequence, timing | Data-plane parser/flow builder | Flows and statistics |
-| Operating mode and application class | Evidence resolver/ML | Inference with confidence or unknown |
-| Crypto, compliance, lifetime, replay, PFS, exposure | Rules/assessment | Findings and coverage |
-| Security/risk score and threat matrix | Assessment | Versioned, explainable result |
+| Operating mode and hidden SA settings | Authorized configuration evidence resolver | Matched configuration fact or unknown; never infer from ESP alone |
+| Application traffic class inside ESP | ML | Synthetic-profile inference with confidence or abstention |
+| Crypto, compliance, lifetime, replay, PFS, exposure | Rules/assessment | Evidence-linked findings and coverage |
+| Security/risk score and threat matrix | Assessment | Versioned, gated score and evidence-linked threat rows |
 | Investigation and report export | API, dashboard, reporting | UI, JSON/PDF/HTML reports |
 
 ## 2. Architecture principles
 
 1. Parse visible facts before applying ML. A model never overwrites an observed field.
-2. Preserve provenance: every result identifies its packet/exchange/flow, method and rule or model version.
+2. Preserve provenance: every result identifies its packet/exchange/flow or
+   matched authorized configuration source, method and rule or model version.
 3. Separate a proposed IKE transform from a selected transform and from an installed SA.
 4. Use `UNKNOWN` when evidence is absent; do not convert missing data into a safe default.
 5. Separate standards requirements, project rules and scoring policy.
 6. Keep deterministic analysis useful when the classifier is unavailable.
 7. Make claims only after reproducible verification. No decryption, accuracy or line-rate claim is implied by this design.
+8. Keep testbed ground truth out of blind packet analysis. Configuration-aware
+   assessment is an explicitly selected mode with a separate trust label.
+9. Treat risk score, evidence coverage and model confidence as distinct values.
 
 ## 3. System context and trust boundaries
 
@@ -36,22 +52,60 @@ flowchart LR
   T[Controlled VPN testbed] --> C
   T --> G[Ground-truth manifest and dataset]
   G --> M[Versioned trained model]
-  C --> I[Analyzer backend]
-  M --> I
-  I --> S[(Result metadata store)]
-  I --> R[Report generator]
-  S --> P[API]
+  C --> I[Packet analyzer]
+  A --> X[Authorized configuration export]
+  X --> V[Source validation and tunnel matching]
+  I --> E[Evidence resolver]
+  V --> E
+  M --> E
+  E --> Q[Rules and coverage]
+  Q --> S[Risk policy and threat mapping]
+  S --> R[Report document]
+  R --> P[Local API]
   P --> U[Analyst dashboard]
-  R --> U
 ```
 
-Captures, testbed keys and labels are sensitive. Ground truth is used to evaluate blind analysis, never supplied to the analyzer as if it were packet evidence. The small shared Phase 4 PCAPs contain only filtered traffic from controlled documentation addresses; generated PSKs and daemon logs stay in ignored run directories. Each shared record pins its capture hash, run group, scenario label and, for generated traffic, deterministic seed. `data/dataset-index.json` validates those records and assigns whole runs to pilot partitions; it is not an ML performance claim. The dashboard receives structured results rather than raw secrets or packet payloads. Live capture requires authorization and appropriate host permissions.
+Captures, configuration exports, testbed keys and labels are sensitive. Ground
+truth is used to evaluate blind analysis, never supplied as packet evidence.
+An authorized configuration export may be used in a separate configuration-aware
+assessment only after explicit source validation and matching to the captured
+tunnel; its provenance must remain visible in every resulting finding. Secrets
+such as PSKs, private keys and authentication material must be stripped before
+the analyzer receives the export. The small shared Phase 4 PCAPs contain only
+filtered traffic from controlled documentation addresses; generated PSKs and
+daemon logs stay in ignored run directories. Each shared record pins its
+capture hash, run group, scenario label and, for generated traffic,
+deterministic seed. `data/dataset-index.json` validates those records and
+assigns whole runs to pilot partitions; it is not an ML performance claim. The
+dashboard receives structured results rather than raw secrets or packet
+payloads. Live capture requires authorization and appropriate host permissions.
 
 ## 4. Deployment and processing model
 
-The current prototype is a modular Python backend with a HTML/CSS/JavaScript analyst dashboard with a self-hosted Motion DOM bundle. A bounded analysis job processes each offline capture. The local API keeps at most 16 results in memory and deletes uploaded capture bytes after analysis. A separate Linux/WSL command captures one bounded window on a named interface with tcpdump, analyzes its temporary PCAP through the offline pipeline, and deletes the raw window on return. The live command has simulated-process parity checks; a real-interface run is pending. SQLite or another persistent store should be introduced only when multi-user or durable job requirements are defined. A React/TypeScript migration, worker service, broker, time-series database or specialized capture daemon is added only if demonstrated need justifies it.
+The current prototype is a modular Python backend with an HTML/CSS/JavaScript
+analyst dashboard and a self-hosted Motion DOM bundle. A bounded analysis job
+processes each offline capture. The local API keeps at most 16 results in
+memory and deletes uploaded capture bytes after analysis. A separate Linux/WSL
+command captures one bounded window on a named interface with tcpdump, analyzes
+its temporary PCAP through the offline pipeline, and deletes the raw window on
+return. Simulated-process tests and one controlled WSL namespace-interface
+live/offline parity run passed; repeated representative live-load measurements
+remain open. SQLite or another persistent store should be introduced only when
+multi-user or durable job requirements are defined. A React/TypeScript
+migration, worker service, broker, time-series database or specialized capture
+daemon is added only if demonstrated need justifies it.
 
-Current offline results record the capture identity and hash, packet count, analysis version, rule-set version, parsed sessions, flows, evidence, evaluations, failed-rule findings, scoring-policy version and limitations. The Phase 4 lab generator records scenario configuration and hashes; a separate registrar records capture identity after checking visible IKE selection and ESP. Neither record attests that a daemon loaded the configuration. The local API analyzes an upload synchronously and stores up to 16 results in memory; it does not expose durable jobs or job states. Recording full runtime provenance and persistent jobs remains future work; live input currently runs as a separate local command, not an API job.
+Current offline results record the capture identity and hash, packet count,
+analysis version, rule-set version, parsed sessions, flows, evidence,
+evaluations, failed-rule findings, scoring-policy version and limitations. They
+do not yet include an authorized-configuration import, comprehensive score or
+threat matrix. The Phase 4 lab generator records scenario configuration and
+hashes; a separate registrar records capture identity after checking visible
+IKE selection and ESP. Neither record by itself attests that a daemon loaded
+the configuration. The local API analyzes an upload synchronously and stores
+up to 16 results in memory; it does not expose durable jobs or job states.
+Recording full runtime provenance and persistent jobs remains future work;
+live input currently runs as a separate local command, not an API job.
 
 ## 5. End-to-end pipeline
 
@@ -62,18 +116,20 @@ flowchart TD
   I --> N[Normalized packet event]
   N --> K[IKE parser and exchange correlator]
   N --> E[ESP / AH / NAT-T parser and flow builder]
+  X[Authorized sanitized config] --> B[Source validation and SA matching]
   E --> F[Flow feature extraction]
   F --> M[Versioned ML inference]
   K --> V[Evidence and session correlation]
   E --> V
+  B --> V
   M --> V
   V --> Q[Versioned rule evaluation]
-  Q --> A[Findings, coverage, score, threats]
-  V --> A
-  A --> D[(Result store)]
+  Q --> A[Findings and evidence coverage]
+  A --> S[Versioned score gate and threat mapping]
+  S --> D[Canonical report document]
   V --> D
   D --> P[API and dashboard]
-  D --> R[Executive and technical reports]
+  D --> R[Executive and technical exports]
 ```
 
 ### 5.1 Ingestion
@@ -99,11 +155,39 @@ A session groups exchanges, SAs, flows, observations, inferences and parse diagn
 
 The current offline correlation contract is documented in [CORRELATION_AND_EVIDENCE.md](docs/design/CORRELATION_AND_EVIDENCE.md). The analyzer returns packet-linked evidence records, partial exchange states, and explicit uncertainty when responder SPIs, response proposals or long idle periods prevent a confident association.
 
-The Phase 5 synthetic pilot loads a bounded JSON centroid artifact from `models/artifacts/traffic-classifier/`. It produces separate per-flow `INFERRED` estimates or `UNKNOWN`/`unknown/other` abstentions in `ai_inference.flows`. Missing or incompatible artifacts leave deterministic rule evaluations available. The six-run test partition is one-host synthetic evidence only; its confidence values are not validated for real application identity.
+The Phase 5 synthetic pilot loads a bounded JSON centroid artifact from
+`models/artifacts/traffic-classifier/`. It produces separate per-flow
+`INFERRED` estimates or `UNKNOWN`/`unknown/other` abstentions in
+`ai_inference.flows`. Missing or incompatible artifacts leave deterministic
+rule evaluations available. The six-run test partition is one-host synthetic
+evidence. Seven additional Kali VM runs covered all six profiles: five were
+accepted with matching generator labels, while web-like and ICMP abstained.
+This is cross-installation synthetic evidence, not validated real application
+identity or reliable probability calibration.
+
+### 5.4a Authorized configuration evidence (planned)
+
+The optional configuration-aware path accepts a sanitized, versioned export
+from an authorized gateway or lab. It records origin, collection time,
+configuration version, relevant peer/connection identity, and the explicit
+matching method to an observed IKE session or ESP SA. A generated testbed
+manifest is ground truth for evaluation; it is not silently promoted to
+observed packet evidence. A peer configuration can support a **configured**
+mode, PFS group, lifetime or replay setting, but installed runtime state needs
+daemon or equivalent attestation. If the export is stale, ambiguous, unmatched
+or missing, dependent values remain `UNKNOWN`. The normal offline capture path
+works without any configuration export.
 
 ### 5.5 Feature and AI layer
 
-The first classifier predicts application traffic within ESP using packet length, timing, direction and burst features. It always outputs `INFERRED`, a class distribution, calibrated confidence or abstention, evidence references, model version and feature-schema version. A separate operating-mode classifier may be added after validation. Outer ESP alone does not establish tunnel versus transport mode. Cipher family, PFS and anti-replay configuration must not be asserted from ESP sizes.
+The first classifier predicts synthetic traffic families within ESP using
+packet length, timing, direction and burst features. It emits `INFERRED` with
+a class distribution and model score, or `UNKNOWN` with an abstention reason,
+plus evidence references, model version and feature-schema version. Numerical
+confidence is a pilot estimate with limited calibration evidence. A separate
+operating-mode classifier may be added only after validation. Outer ESP alone
+does not establish tunnel versus transport mode. Cipher family, PFS and
+anti-replay configuration must not be asserted from ESP sizes.
 
 Candidate structured models such as XGBoost are evaluated before sequence models. Dataset splits must be by run/tunnel/scenario, not adjacent packets from the same session. Measure per-class behavior, calibration and performance on unseen configurations/generators. An unavailable, incompatible or uncertain model returns unknown and leaves deterministic analysis intact.
 
@@ -111,9 +195,25 @@ Candidate structured models such as XGBoost are evaluated before sequence models
 
 Each rule declares ID/revision, exact baseline reference, applicability, required evidence, condition, severity rationale and remediation. Evaluations return `PASS`, `FAIL`, `UNKNOWN` or `NOT_APPLICABLE`. Findings link the rule to packet/exchange/flow evidence, observed values, impact and limitations. No finding is not proof of compliance. Standards clauses must be checked against authoritative text before activating a standards-based rule.
 
-Assess cryptographic choices, SA properties, lifetime/rekey, replay, PFS, cipher-suite composition and metadata exposure only to the extent supported by evidence. Inferred application class informs traffic analysis, not deterministic crypto compliance. Threat mappings describe plausible impacts and use MITRE techniques only when justified; they do not assert an attack occurred.
+Assess cryptographic choices, SA properties, lifetime/rekey, replay, PFS,
+cipher-suite composition and metadata exposure only to the extent supported
+by packet or matched authorized configuration evidence. Keep the source type
+and whether the value is configured or installed in each evaluation. Inferred
+application class informs traffic analysis, not deterministic crypto
+compliance. A threat-matrix row is derived from an applicable failed rule and
+contains a threat category, affected control, severity, evidence references,
+impact and remediation. It describes a plausible risk, not an observed attack;
+MITRE techniques are included only when independently justified.
 
-The versioned score policy defines weights, penalties, normalization and handling of unknown dimensions. Every score exposes formula/version, contributing findings and evidence coverage. Low coverage yields a provisional or withheld overall score. AI confidence is about a model prediction, not the probability that the whole assessment is correct.
+The planned versioned risk policy must define weights, denominator, risk bands,
+handling of `UNKNOWN` and `NOT_APPLICABLE`, and a minimum-evidence gate before
+any comprehensive score is displayed. Report evidence coverage separately from
+risk. Every displayed score must expose its formula/version, contributing rule
+IDs, evidence references and coverage. Insufficient coverage withholds the
+overall score; it does not imply zero risk or a compliant deployment. The
+current narrow assessed-rule pass rate is not the SIH risk score. AI confidence
+is about a model prediction, not the probability that the whole assessment is
+correct.
 
 ### 5.7 API, dashboard and reporting
 
@@ -135,16 +235,30 @@ Exchange {id, ike_version, endpoints, spis, exchange_type, message_ids,
 Flow {id, endpoints, encapsulation, spi, direction, time_range,
       packet_refs, statistics, sequence_observations}
 Evidence {id, subject_id, field, value?, state, source_refs,
-          method_version?, confidence?, reason?}
+          source_type, method_version?, confidence?, reason?}
+ConfigEvidence {id, source_id, source_kind, collected_at, config_version,
+                peer_scope, match_method, matched_session_ids, field,
+                sanitized_value, configured_or_installed, validity_state}
 Inference {id, target, prediction?, probabilities?, confidence?,
            abstained, model_version, feature_schema_version, evidence_refs}
 Finding {id, rule_id, rule_version, status, severity?, subject_id,
          evidence_refs, rationale, impact, remediation, baseline_ref?}
+ThreatRow {id, category, affected_control, severity, finding_ids,
+           evidence_refs, impact, remediation, mapping_version}
+RiskScore {value?, band?, status, policy_version, eligible_rule_ids,
+           contribution_ids, coverage, withheld_reason?}
 Assessment {id, capture_id, session_ids, findings, coverage,
-            score?, score_policy_version, rule_set_version, limitations}
+            risk_score?, threat_rows, score_policy_version,
+            rule_set_version, limitations}
 ```
 
-Evidence states are `OBSERVED` (directly decoded), `DERIVED` (calculated), `INFERRED` (estimated) and `UNKNOWN` (unavailable). Rule status is separate. Unknown fields have null values and explicit reasons, not default zero or false.
+Evidence states are `OBSERVED` (directly decoded), `DERIVED` (calculated),
+`INFERRED` (estimated) and `UNKNOWN` (unavailable). Configuration evidence has
+its own source and validity fields; it is not labeled as a packet observation.
+Rule status is separate. Unknown fields have null values and explicit reasons,
+not default zero or false. `RiskScore.status` is `SCORED` or `WITHHELD`, with
+the reason required when withheld. These additions are target contracts and
+are not present in the current API.
 
 ## 7. What the analyzer can conclude
 
@@ -153,10 +267,11 @@ Evidence states are `OBSERVED` (directly decoded), `DERIVED` (calculated), `INFE
 | IPsec/IKE/ESP/AH present? | Protocol and encapsulation markers | Unknown for ambiguous packets |
 | IKE version and offered proposals? | Visible IKE headers/payloads | Unknown if absent/encrypted |
 | Selected cipher, DH or authentication? | Selected response or validated exchange | Keep offer; selection unknown |
-| Tunnel or transport? | Trusted topology/configuration or separately validated inference | Unknown if unsupported |
-| Child SA lifetime, PFS, replay setting? | Decodable exchange or trusted configuration | Unknown; ESP behavior is not configuration proof |
+| Tunnel or transport? | Matched authorized configuration or separately validated inference | Unknown in ordinary passive analysis |
+| Child SA lifetime, PFS, replay setting? | Decodable exchange, matched configuration or installed-state attestation | Unknown; ESP behavior is not configuration proof |
 | Application carried inside ESP? | No direct passive visibility | Inferred model estimate or abstention |
-| Compliance? | Applicable rule with sufficient evidence | Unknown or not applicable |
+| Compliance? | Applicable versioned rule with sufficient packet or validated configuration evidence | Unknown or not applicable |
+| Overall risk and threat matrix? | Eligible rule evaluations with adequate evidence coverage | Withheld score and explicit coverage gaps; no invented threat rows |
 
 ## 8. Testbed and dataset
 
@@ -164,13 +279,41 @@ An isolated lab uses Linux namespaces or VMs, virtual links and strongSwan/Libre
 
 Traffic generators cover VoIP-like, messaging-like, email, web, ICMP and video patterns. Synthetic traffic is labeled as synthetic, not as a real commercial app. Capture IKE and ESP plus normal communication where relevant. Each scenario yields ground-truth labels, manifest, capture checksum and reproducibility instructions. Dataset documentation records source, generator, capture conditions, labels, preprocessing, splits, versions and privacy constraints. Training/validation/test partitions are separated by run/tunnel to reduce leakage.
 
-The current Phase 4 pilot has two Linux namespaces, isolated strongSwan peers, five configuration scenarios, six synthetic traffic profiles and two Child SA rekey checks on Ubuntu WSL2. Forty-four small outer-link PCAPs and sidecar labels are pinned in `data/sample/`, including thirty varied repeat runs and IPv6 and UDP encapsulation references. Rekey sidecars come from `swanctl --list-sas`; the passive analyzer still reports PFS as unknown. The pilot comes from one host and is not suitable for model performance claims.
+The current Phase 4 pilot has two Linux namespaces, isolated strongSwan peers,
+five configuration scenarios, six synthetic traffic profiles and two Child SA
+rekey checks on Ubuntu WSL2. Forty-four small outer-link PCAPs and sidecar
+labels are pinned in `data/sample/`, including thirty varied repeat runs and
+IPv6 and UDP encapsulation references. Rekey sidecars come from `swanctl
+--list-sas`; the passive analyzer still reports PFS as unknown. Modern and CBC
+scenarios were also reproduced on a Kali VMware Linux installation. This is
+useful cross-installation evidence, but not a separate physical-host or
+another-developer attestation, and the dataset remains synthetic.
 
 ## 9. Interfaces, persistence and security
 
-Current local API resources are `POST /api/analyses` (raw capture bytes), `GET /api/analyses/{id}`, focused `/status`, `/sessions`, `/flows`, `/findings`, `/evidence` and `/evidence/{evidence_id}` resources, and `/report?format=text|html|pdf|json`. The report endpoint accepts `redacted=true` in every format. The dashboard is served at `/`. Persistent storage and live start/stop/status remain target interfaces. Validate uploads, paths, formats and query bounds. Current upload limit is 16 MiB, results are bounded in memory and raw uploads are deleted after processing. Bind the prototype to loopback only; it has no user authentication and is not a network service.
+Current local API resources are `POST /api/analyses` (raw capture bytes),
+`GET /api/analyses/{id}`, focused `/status`, `/sessions`, `/flows`, `/findings`,
+`/evidence` and `/evidence/{evidence_id}` resources, and
+`/report?format=text|html|pdf|json`. The report endpoint accepts
+`redacted=true` in every format. The dashboard is served at `/`. A future
+configuration-aware request must use an explicit opt-in input and return
+source-validation and tunnel-match status; it must not turn a testbed label
+into a packet finding. New score and threat-matrix resources or fields must
+derive from the same canonical report document used by all exports. Persistent
+storage and live start/stop/status remain target interfaces. Validate uploads,
+paths, formats and query bounds. Current upload limit is 16 MiB, results are
+bounded in memory and raw uploads are deleted after processing. Bind the
+prototype to loopback only; it has no user authentication and is not a network
+service.
 
-Treat PCAP as untrusted input: validate lengths and nesting, cap CPU/memory/time, and isolate parse failures by packet/job. Avoid payloads and secrets in routine logs and API results. Separate testbed orchestration privileges from analysis privileges. Restrict raw capture and report access and support redaction for sharing. Deployment-specific authentication and authorization are finalized once the hosting environment is selected.
+Treat PCAP and configuration exports as untrusted input: validate lengths,
+nesting, schema and size, cap CPU/memory/time, and isolate parse failures by
+packet/job or configuration field. Strip secrets before parsing and never echo
+unknown configuration keys into reports. Avoid payloads and secrets in routine
+logs and API results. Separate testbed orchestration privileges from analysis
+privileges. Restrict raw capture and report access and support redaction for
+sharing. Deployment-specific authentication and authorization are finalized
+once the hosting environment is selected.
 
 ## 10. Verification gates
 
@@ -179,11 +322,12 @@ Treat PCAP as untrusted input: validate lengths and nesting, cap CPU/memory/time
 | Parsing | Valid/malformed PCAP and PCAPNG; IPv4/IPv6; IKEv1/v2; ESP/NAT-T; optional AH |
 | Correlation | Retransmissions, partial exchanges, concurrent SAs, SPI reuse and ambiguity |
 | Evidence | Provenance, unknown state and proposal-versus-selection distinction |
-| Rules/score | Fail, pass, unknown, boundary and version/coverage cases |
-| ML | Run-level holdout, per-class metrics, calibration, abstention and schema compatibility |
-| API/UI/reports | Valid, empty, partial and error states; export consistency and redaction |
+| Configuration match | Valid, stale, unmatched, ambiguous and secret-bearing exports; configured versus installed state |
+| Rules/score/threats | Fail, pass, unknown, not-applicable, formula boundary and version/coverage cases; withheld score and threat provenance |
+| ML | Run-level holdout, per-class metrics, calibration, abstention and schema compatibility; synthetic versus real-application scope |
+| API/UI/reports | Valid, empty, partial and error states; score/threat/coverage consistency, evidence links and redaction |
 | Live | Permissions, stop/restart, dropped packets and bounded resources before support is claimed |
-| End to end | Recreate a testbed scenario and trace a report finding to packet and rule |
+| End to end | Recreate strong and weak testbed scenarios, trace report finding to packet or matched configuration and rule, and reproduce submission video claims |
 
 Performance claims require measurement on named hardware, captures and settings.
 
@@ -191,12 +335,19 @@ Performance claims require measurement on named hardware, captures and settings.
 
 1. Foundation: package, contracts, offline ingestion, diagnostics and fixtures.
 2. Protocol core: IKE, ESP/NAT-T, optional AH, exchange/flow correlation and provenance.
-3. Assessment: reviewed rules, coverage-aware score, JSON/technical report.
-4. Testbed: configuration matrix, ground truth, captures and dataset card.
-5. AI: versioned features, trained/evaluated classifier, calibration and abstention.
-6. Product: API, interactive dashboard, executive/PDF report.
-7. Live path: authorized adapter, limits, security controls and measured performance.
-8. Submission: working prototype, classifier, dashboard, assessment report, demo video, technical documentation and dataset.
+3. Assessment: reviewed visible-field rules and provenance; then authorized
+   configuration matching, broader rules, coverage-gated risk score and threat
+   matrix.
+4. Testbed: requested configuration matrix, normal-traffic control, ground
+   truth, captures and dataset card, with optional AH marked explicitly.
+5. AI: versioned features, trained/evaluated classifier, calibration,
+   abstention and independent real-traffic validation.
+6. Product: API, interactive dashboard, matching score/threat views and
+   executive/technical exports from one report model.
+7. Live path: authorized adapter, limits, security controls and measured
+   performance on named hardware.
+8. Submission: working prototype, classifier, dashboard, assessment report,
+   demo video, technical documentation, dataset and requirement evidence index.
 
 This is an implementation order, not permission to omit required deliverables. A capability is complete only when it runs, exposes limitations and can be reproduced.
 
@@ -204,4 +355,9 @@ This is an implementation order, not permission to omit required deliverables. A
 
 Production Python code belongs under `src/ipsec_analyzer/`: `ingestion`, `parsers`, `models` (domain schemas), `features`, `rules`, `assessment`, `ml`, `reporting`, `api` and `common`. Frontend belongs in `dashboard/web/`; testbed in `testbed/`; tests in `tests/`; dataset in `data/`; trained artifacts and metadata in top-level `models/`; design and standards notes in `docs/`. `DIRECTORY_CONSTRAINTS.md` defines exact file rules.
 
-Decisions requiring evaluation: decoder coverage and malformed-input safety; precise standards clauses and baseline profiles; passive mode-inference validity; model generalization beyond lab traffic; and whether live load warrants a worker queue or faster capture path. Until validated, the contracts above report unknown, partial support or model abstention.
+Decisions requiring evaluation: exact authorized configuration export schema
+and tunnel-match proof; standards clauses and baseline profiles; risk-policy
+weights and minimum coverage; whether passive mode inference can be validated;
+model generalization beyond lab traffic; and whether live load warrants a
+worker queue or faster capture path. Until validated, the contracts above
+report unknown, withheld score, partial support or model abstention.

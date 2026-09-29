@@ -2,6 +2,13 @@
 
 **As of 29 September 2026.** This records implemented behavior, not intended architecture.
 
+The [SIH-aligned implementation plan](IMPLEMENTATION_PHASES.md) and
+[project improvement plan](PROJECT_IMPROVEMENT_PLAN.md) now include an
+authorized-configuration evidence path, broader assessment, a coverage-gated
+risk score, threat matrix and final submission package. These are planned
+requirements, not implemented features. The phase states below retain their
+documented prototype scope until the new gates pass.
+
 | Phase | State | Verified now | Remaining |
 | --- | --- | --- | --- |
 | 0 — Foundation hardening | Complete for documented prototype scope | PCAP/PCAPNG equivalence, bounds, diagnostics, section/timestamp handling, fragmented/truncated packet and security-header rejection, CLI summary, supported-input document and memory checks | Streaming and broader link types are later scope |

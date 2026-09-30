@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>IPsec Analyzer | Reviewed lab demo</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/theme.css">
+  <link rel="stylesheet" href="/assets/editorial.css">
+  <link rel="stylesheet" href="/assets/demo.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to lab cases</a>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="identity"><span class="identity-mark" aria-hidden="true">IP</span><span>IPsec Analyzer</span><span class="identity-divider"></span><span class="identity-sub">Reviewed lab demo</span></div>
+      <div class="topbar-right"><span class="scope-pill">PUBLIC READ-ONLY DEMO</span><span class="version">v0.1</span></div>
+    </header>
+    <main id="main-content" class="demo-main">
+      <section class="page-heading demo-heading" aria-labelledby="demo-title">
+        <div class="heading-copy"><p class="eyebrow">IPSEC / LAB EVIDENCE / 01</p><h1 id="demo-title">Decode the <em>unseen.</em></h1><p class="intro">Explore reviewed captures from an isolated strongSwan lab. Follow visible IKE and ESP facts to rules, packets and reports.</p></div>
+      </section>
+      <div class="demo-boundary"><strong>Evidence boundary</strong><span>These are captured lab VPN runs, with generated test traffic. Public uploads are disabled. Capture-only analyses withhold the numeric risk score because no matched configuration snapshot is supplied.</span></div>
+      <section class="demo-section" aria-labelledby="cases-title"><p class="eyebrow">THE CAPTURES / 01–04</p><h2 id="cases-title">Choose an investigation</h2>
+        <div class="demo-grid">
+          <a class="demo-card" href="/demo/modern-tunnel"><span class="demo-number">01 / MODERN TUNNEL</span><strong>AES-GCM-256</strong><p>10 packets · 1 IKEv2 session · 2 ESP directions. Selected IKE transform from the captured response.</p><span class="demo-action">Explore assessment <span aria-hidden="true">↗</span></span></a>
+          <a class="demo-card" href="/demo/cbc-no-pfs"><span class="demo-number">02 / CBC CONTRAST</span><strong>AES-CBC-128</strong><p>8 packets · 1 IKEv2 session · 2 ESP directions. No-PFS is lab configuration provenance, not a passive packet verdict.</p><span class="demo-action">Explore assessment <span aria-hidden="true">↗</span></span></a>
+          <a class="demo-card" href="/demo/voip-like"><span class="demo-number">03 / AI PILOT</span><strong>VoIP-like profile</strong><p>A generated traffic pattern through a captured VPN. Compare one model estimate with an abstained direction.</p><span class="demo-action">Explore inference <span aria-hidden="true">↗</span></span></a>
+          <a class="demo-card" href="/demo/plain-icmp"><span class="demo-number">04 / NEGATIVE CONTROL</span><strong>Plain ICMP</strong><p>6 unprotected packets, no IKE session and no ESP flow. Ordinary traffic should not be labeled as IPsec.</p><span class="demo-action">Explore control <span aria-hidden="true">↗</span></span></a>
+        </div>
+      </section>
+      <section class="demo-footnote"><h2>How to read the results</h2><p><b>Observed</b> means visible in a packet. <b>Configured</b> means supplied by a matched authorized snapshot. <b>Inferred</b> is a pilot model estimate. <b>Unknown</b> means the evidence does not establish the setting. The model's synthetic profile labels do not identify real applications inside ESP.</p></section>
+    </main>
+    <footer><span>SIH26160 · Reviewed lab demonstration</span><nav aria-label="Legal pages"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></footer>
+  </div>
+</body>
+</html>

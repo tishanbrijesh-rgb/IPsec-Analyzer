@@ -481,7 +481,7 @@ if (savedId && /^[a-f0-9]{32}$/.test(savedId)) {
   fetch("/api/analyses/" + savedId).then(async (response) => {
     if (!response.ok) throw new Error("Analysis expired or unavailable. Upload the capture again.");
     render(await response.json(), savedId);
-    setStatus("Analysis loaded from this local session.", "success");
+    setStatus("Analysis loaded.", "success");
     const view = location.pathname.split("/").at(-1);
     const target = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
     if (target) {

@@ -1,0 +1,20 @@
+.demo-main { max-width: 1400px; margin: auto; }
+.demo-heading { min-height: 360px; display: flex; align-items: center; }
+.demo-heading .intro { max-width: 58ch; }
+.demo-boundary { display: flex; gap: 22px; align-items: baseline; margin: 24px 0 44px; padding: 20px 23px; border: 1px solid #694575; background: #211629; color: #d6c7dc; line-height: 1.55; }
+.demo-boundary strong { flex: none; color: #f0b0ff; text-transform: uppercase; font: 700 12px var(--mono); letter-spacing: .08em; }
+.demo-section { margin-bottom: 42px; }
+.demo-section h2 { margin: 7px 0 21px; color: #f4ecf7; font-size: clamp(30px,4vw,52px); font-weight: 450; text-transform: uppercase; letter-spacing: -.05em; }
+.demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 13px; }
+.demo-card { position: relative; display: flex; flex-direction: column; min-height: 255px; padding: 26px; border: 1px solid #4c3655; background: radial-gradient(circle at 90% 0%,rgba(162,54,218,.2),transparent 45%),#18131d; color: #ece3f0; text-decoration: none; transition: transform .2s,border-color .2s,background-color .2s; }
+.demo-card:hover { transform: translateY(-3px); border-color: #da85ef; background-color: #221629; }
+.demo-card:focus-visible { outline: 2px solid #f1b8ff; outline-offset: 3px; }
+.demo-number { color: #dc96ed; font: 700 11px var(--mono); letter-spacing: .08em; }
+.demo-card strong { margin-top: 22px; color: #fff7ff; font-size: clamp(26px,3vw,37px); font-weight: 480; letter-spacing: -.045em; }
+.demo-card p { max-width: 58ch; margin: 12px 0 20px; color: #cdbfd2; line-height: 1.55; }
+.demo-action { margin-top: auto; color: #f0b7fa; font-size: 13px; font-weight: 700; }
+.demo-action span { margin-left: 9px; }
+.demo-footnote { max-width: 72ch; padding: 24px 0 48px; color: #d0c4d5; line-height: 1.65; }
+.demo-footnote h2 { color: #fff1ff; font-size: 21px; font-weight: 550; }
+@media (max-width: 700px) { .demo-heading { min-height: 310px; } .demo-grid { grid-template-columns: 1fr; } .demo-boundary { display: block; } .demo-boundary strong { display: block; margin-bottom: 9px; } .demo-card { min-height: 220px; padding: 22px; } }
+@media (prefers-reduced-motion: reduce) { .demo-card { transition: none; } .demo-card:hover { transform: none; } }

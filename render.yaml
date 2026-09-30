@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ipsec-analyzer-lab-demo
+    runtime: python
+    plan: free
+    buildCommand: pip install .
+    startCommand: uvicorn ipsec_analyzer.api.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: IPSEC_DEPLOYMENT_MODE
+        value: public-demo

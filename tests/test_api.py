@@ -1,5 +1,6 @@
 import asyncio
 import json
+from collections import OrderedDict
 from pathlib import Path
 
 from ipsec_analyzer.api.app import app
@@ -37,6 +38,29 @@ def request(method: str, path: str, body: bytes = b"", headers=None, client="127
         return status, content
 
     return asyncio.run(run())
+
+
+def test_public_demo_is_read_only_and_serves_reviewed_captures(monkeypatch):
+    monkeypatch.setattr(api_module, "PUBLIC_DEMO", True)
+    monkeypatch.setattr(api_module, "_results", OrderedDict())
+    monkeypatch.setattr(api_module, "_demo_ids", {})
+    external = {"host": "ipsec-analyzer-lab-demo.onrender.com"}
+    status, home = request("GET", "/", headers=external, client="203.0.113.6")
+    assert status == 200
+    assert b"PUBLIC READ-ONLY DEMO" in home
+    assert b"/demo/modern-tunnel" in home
+    modern_id = api_module._demo_ids["modern-tunnel"]
+    status, body = request("GET", f"/api/analyses/{modern_id}", headers=external,
+                           client="203.0.113.6")
+    assert status == 200
+    assert json.loads(body)["capture"]["packet_count"] == 10
+    status, _ = request("POST", "/api/analyses", b"unsafe", external,
+                        client="203.0.113.6")
+    assert status == 405
+    status, page = request("GET", f"/analyses/{modern_id}/assessment", headers=external,
+                           client="203.0.113.6")
+    assert status == 200
+    assert b"PUBLIC LAB DEMO" in page
 
 
 def test_upload_and_get(tmp_path):

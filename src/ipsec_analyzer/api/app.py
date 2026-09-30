@@ -1,7 +1,7 @@
-"""Local-only analysis API and dashboard host.
+"""Local analysis API, with an opt-in read-only public sample gallery.
 
 Run with: uvicorn ipsec_analyzer.api.app:app --host 127.0.0.1 --port 8000
-This prototype has no user accounts and must not be exposed on a network.
+The default upload mode has no user accounts and must remain on loopback.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import tempfile
 import ipaddress
 import json
+import os
 from collections import OrderedDict
 from pathlib import Path
 from typing import Literal
@@ -16,7 +17,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from starlette.datastructures import UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from ipsec_analyzer.assessment.analyze import analyze_capture
@@ -26,23 +27,47 @@ from ipsec_analyzer.reporting.exports import report_document, report_text, repor
 MAX_UPLOAD_BYTES = 16 * 1024 * 1024
 MAX_RESULTS = 16
 WEB_DIR = Path(__file__).resolve().parents[3] / "dashboard" / "web"
+ROOT_DIR = WEB_DIR.parents[1]
+PUBLIC_DEMO = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "public-demo"
+DEMO_CAPTURES = {
+    "modern-tunnel": ROOT_DIR / "data/sample/modern-tunnel.pcap",
+    "cbc-no-pfs": ROOT_DIR / "data/sample/cbc-no-pfs.pcap",
+    "voip-like": ROOT_DIR / "data/sample/phase4-voip-01.pcap",
+    "plain-icmp": ROOT_DIR / "data/control/plain-icmp-01.pcap",
+}
 app = FastAPI(title="IPsec Analyzer", version="0.1.0", docs_url=None, redoc_url=None)
 _results: OrderedDict[str, dict] = OrderedDict()
+_demo_ids: dict[str, str] = {}
+
+
+def _load_demo_results() -> None:
+    if not PUBLIC_DEMO or _demo_ids:
+        return
+    for slug, capture_path in DEMO_CAPTURES.items():
+        result = analyze_capture(capture_path).to_dict()
+        analysis_id = result["capture"]["sha256"][:32]
+        _results[analysis_id] = result
+        _demo_ids[slug] = analysis_id
 
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
-    host_header = request.headers.get("host", "").lower()
-    host = host_header.split("]")[0] + "]" if host_header.startswith("[") else host_header.split(":")[0]
-    if host not in ("127.0.0.1", "localhost", "[::1]"):
-        return JSONResponse({"detail": "Local host name required"}, status_code=403)
-    client_host = request.client.host if request.client else ""
-    try:
-        loopback = ipaddress.ip_address(client_host).is_loopback
-    except ValueError:
-        loopback = False
-    if not loopback:
-        return JSONResponse({"detail": "Local access only"}, status_code=403)
+    if PUBLIC_DEMO:
+        _load_demo_results()
+        if request.method not in ("GET", "HEAD"):
+            return JSONResponse({"detail": "Public demo is read-only"}, status_code=405)
+    else:
+        host_header = request.headers.get("host", "").lower()
+        host = host_header.split("]")[0] + "]" if host_header.startswith("[") else host_header.split(":")[0]
+        if host not in ("127.0.0.1", "localhost", "[::1]"):
+            return JSONResponse({"detail": "Local host name required"}, status_code=403)
+        client_host = request.client.host if request.client else ""
+        try:
+            loopback = ipaddress.ip_address(client_host).is_loopback
+        except ValueError:
+            loopback = False
+        if not loopback:
+            return JSONResponse({"detail": "Local access only"}, status_code=403)
     if request.method == "POST":
         origin = request.headers.get("origin")
         if origin and origin != f"{request.url.scheme}://{request.headers.get('host')}":
@@ -61,7 +86,7 @@ async def security_headers(request: Request, call_next):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ready", "version": "0.1.0"}
+    return {"status": "ready", "version": "0.1.0", "mode": "public-demo" if PUBLIC_DEMO else "local"}
 
 
 @app.post("/api/analyses", status_code=201)
@@ -178,18 +203,34 @@ if WEB_DIR.is_dir():
 
     @app.get("/", response_class=HTMLResponse)
     def index():
+        if PUBLIC_DEMO:
+            return (WEB_DIR / "demo.html").read_text(encoding="utf-8")
         return (WEB_DIR / "index.html").read_text(encoding="utf-8")
+
+    @app.get("/demo/{slug}")
+    def demo_analysis(slug: str):
+        if not PUBLIC_DEMO or slug not in _demo_ids:
+            raise HTTPException(404, "Demo capture not found")
+        view = "inference" if slug == "voip-like" else "assessment"
+        return RedirectResponse(f"/analyses/{_demo_ids[slug]}/{view}", status_code=302)
 
     @app.get("/analyses/{analysis_id}/{view}", response_class=HTMLResponse)
     def analysis_page(analysis_id: str, view: Literal["assessment", "threats", "sessions", "flows",
                                                   "inference", "evidence", "packets", "reports"]):
         _lookup(analysis_id)
-        return (WEB_DIR / "index.html").read_text(encoding="utf-8")
+        html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+        if PUBLIC_DEMO:
+            html = html.replace("LOCAL WORKSPACE", "PUBLIC LAB DEMO")
+        return html
 
     @app.get("/privacy", response_class=HTMLResponse)
     def privacy():
+        if PUBLIC_DEMO:
+            return (WEB_DIR / "demo-privacy.html").read_text(encoding="utf-8")
         return (WEB_DIR / "privacy.html").read_text(encoding="utf-8")
 
     @app.get("/terms", response_class=HTMLResponse)
     def terms():
+        if PUBLIC_DEMO:
+            return (WEB_DIR / "demo-terms.html").read_text(encoding="utf-8")
         return (WEB_DIR / "terms.html").read_text(encoding="utf-8")

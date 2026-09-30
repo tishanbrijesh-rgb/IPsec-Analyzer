@@ -310,7 +310,7 @@ if WEB_DIR.is_dir():
         html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
         if HOSTED_UPLOAD:
             html = html.replace("LOCAL WORKSPACE", "PROTECTED WORKSPACE" if PROTECTED_UPLOAD else "PUBLIC UPLOAD WORKSPACE")
-            html = html.replace("analyzed by the local service", "analyzed by the protected hosted service")
+            html = html.replace("analyzed by the local service", "analyzed by the hosted service")
             html = html.replace("Choose a local capture", "Choose an authorized capture")
             html = html.replace("A local capture", "An authorized capture")
         return html

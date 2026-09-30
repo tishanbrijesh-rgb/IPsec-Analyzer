@@ -26,8 +26,17 @@ from ipsec_analyzer.reporting.exports import report_document, report_text, repor
 
 MAX_UPLOAD_BYTES = 16 * 1024 * 1024
 MAX_RESULTS = 16
-WEB_DIR = Path(__file__).resolve().parents[3] / "dashboard" / "web"
-ROOT_DIR = WEB_DIR.parents[1]
+def _repository_root() -> Path:
+    # Render installs the package in a virtual environment, while the checked-out
+    # dashboard and reviewed captures remain under the service working directory.
+    for candidate in (Path.cwd(), *Path(__file__).resolve().parents):
+        if (candidate / "dashboard" / "web").is_dir() and (candidate / "data" / "sample").is_dir():
+            return candidate
+    return Path(__file__).resolve().parents[3]
+
+
+ROOT_DIR = _repository_root()
+WEB_DIR = ROOT_DIR / "dashboard" / "web"
 PUBLIC_DEMO = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "public-demo"
 DEMO_CAPTURES = {
     "modern-tunnel": ROOT_DIR / "data/sample/modern-tunnel.pcap",

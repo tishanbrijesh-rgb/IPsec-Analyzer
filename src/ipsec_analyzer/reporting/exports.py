@@ -18,7 +18,8 @@ def report_document(analysis: Analysis, redacted: bool = False) -> dict:
     data = analysis.to_dict()
     names = ("capture", "sessions", "flows", "evidence", "rule_evaluations", "findings",
              "coverage", "assessed_rule_pass_percent", "rule_set_version", "security_score",
-             "risk_score", "score_reason", "ai_inference", "limitations", "finding_count")
+             "risk_score", "score_reason", "ai_inference", "limitations", "finding_count",
+             "configuration", "threat_matrix", "score_policy_version")
     document = {name: deepcopy(data[name]) for name in names}
     document["report_schema_version"] = "1"
     document["summary"] = {
@@ -26,11 +27,13 @@ def report_document(analysis: Analysis, redacted: bool = False) -> dict:
         "ike_session_count": len(data["sessions"]),
         "directional_flow_count": len(data["flows"]),
         "failed_rule_finding_count": data["finding_count"],
-        "score_status": "WITHHELD",
+        "score_status": data["risk_score"]["status"],
     }
     if not redacted:
         return document
     substitutions = {data["capture"]["sha256"]: "[redacted]", data["capture"]["id"]: "[capture]"}
+    if data["configuration"]["source_id"]:
+        substitutions[data["configuration"]["source_id"]] = "[redacted configuration source]"
     for flow in data["flows"]:
         substitutions[flow["source"]] = "[redacted endpoint]"
         substitutions[flow["destination"]] = "[redacted endpoint]"
@@ -64,7 +67,10 @@ def report_text(analysis: Analysis, redacted: bool = False) -> str:
     lines = ["Executive summary",
              f"Capture contains {data['capture']['packet_count']} packets, {len(data['sessions'])} IKE sessions and {len(data['flows'])} directional ESP/AH flows.",
              f"Failed rule findings: {data['finding_count']}.",
-             "Overall security score: withheld because implemented coverage is limited.",
+             (f"Overall risk score: {data['risk_score']['value']}/100 ({data['risk_score']['band']}); "
+              f"weighted coverage {data['risk_score']['coverage']:.0%}." if data["risk_score"]["status"] == "SCORED"
+              else f"Overall risk score: withheld. {data['risk_score']['withheld_reason']}"),
+             f"Threat matrix rows: {len(data['threat_matrix'])}.",
              "Traffic labels, when present, are INFERRED synthetic-profile estimates, not observed applications.",
              ""]
     technical = render_technical(Analysis(data))
@@ -72,7 +78,7 @@ def report_text(analysis: Analysis, redacted: bool = False) -> str:
     lines.extend(["", "Traffic inference"])
     for item in data.get("ai_inference", {}).get("flows", []):
         label = item["prediction"] if not item["abstained"] else "unknown/other (abstained)"
-        confidence = f"; pilot confidence {item['confidence']:.3f}" if item["confidence"] is not None else ""
+        confidence = f"; pilot model score {item['confidence']:.3f} (probability unvalidated)" if item["confidence"] is not None else ""
         lines.append(f"- {item['flow_id'].split(':')[-1]}: {item['state']} {label}{confidence}; packets {item['evidence_refs']}")
     if not data.get("ai_inference", {}).get("flows"):
         lines.append("- No compatible classifier result is available.")

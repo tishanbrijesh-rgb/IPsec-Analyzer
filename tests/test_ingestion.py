@@ -45,6 +45,38 @@ def test_pcap_and_pcapng_normalize_the_same_facts(tmp_path):
     ]
 
 
+@pytest.mark.parametrize("link_type", [113, 276])
+@pytest.mark.parametrize("writer", [write_pcap, write_pcapng])
+def test_linux_cooked_capture_preserves_ike_and_esp(link_type, writer, tmp_path):
+    ethernet = frames()
+    prefix = (b"\0" * 14 + b"\x08\x00") if link_type == 113 else (b"\x08\x00" + b"\0" * 18)
+    cooked = [prefix + frame[14:] for frame in ethernet]
+    path = writer(tmp_path / ("cooked.pcap" if writer is write_pcap else "cooked.pcapng"), cooked)
+    raw = bytearray(path.read_bytes())
+    if writer is write_pcap:
+        raw[20:24] = struct.pack("<I", link_type)
+    else:
+        raw[36:38] = struct.pack("<H", link_type)
+    path.write_bytes(raw)
+    result = read_capture(path)
+    assert [packet.kind for packet in result.packets] == [
+        PacketKind.IKE, PacketKind.ESP, PacketKind.ESP, PacketKind.IKE, PacketKind.NAT_KEEPALIVE,
+    ]
+    assert result.packets[1].spi == 0x12345678
+    assert parse_ike(result.packets[0], result.raw_frames[0]) is not None
+    assert not result.diagnostics
+
+
+@pytest.mark.parametrize("link_type,code", [(113, "TRUNCATED_SLL"), (276, "TRUNCATED_SLL2")])
+def test_truncated_linux_cooked_header_is_diagnostic(link_type, code, tmp_path):
+    path = write_pcap(tmp_path / "short-cooked.pcap", [b"\0" * 8])
+    raw = bytearray(path.read_bytes())
+    raw[20:24] = struct.pack("<I", link_type)
+    path.write_bytes(raw)
+    result = read_capture(path)
+    assert result.packets[0].diagnostics[0].code == code
+
+
 def test_truncated_record_is_diagnostic(tmp_path):
     path = write_pcap(tmp_path / "partial.pcap")
     path.write_bytes(path.read_bytes()[:-3])

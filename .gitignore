@@ -13,7 +13,11 @@ coverage/
 data/generated/
 testbed/captures/
 testbed/generated/
-models/artifacts/
+models/artifacts/*
+!models/artifacts/traffic-classifier/
+models/artifacts/traffic-classifier/*
+!models/artifacts/traffic-classifier/model.json
+!models/artifacts/traffic-classifier/evaluation.json
 docs/reports/
 .env
 .env.*

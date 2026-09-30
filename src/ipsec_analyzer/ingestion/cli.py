@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 
 from ipsec_analyzer.ingestion.capture import CaptureError, read_capture
 
@@ -14,11 +15,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("capture", help="Path to a PCAP or PCAPNG file")
     parser.add_argument("--summary", action="store_true", help="Print counts and diagnostics instead of packet records")
     parser.add_argument("--analyze", choices=("json", "text"), help="Run the current evidence-backed assessment")
+    parser.add_argument("--configuration", help="Sanitized authorized configuration JSON for --analyze")
     args = parser.parse_args(argv)
     try:
         if args.analyze:
             from ipsec_analyzer.assessment.analyze import analyze_capture
-            analysis = analyze_capture(args.capture)
+            configuration = None
+            if args.configuration:
+                config_path = Path(args.configuration)
+                if config_path.stat().st_size > 16 * 1024:
+                    raise ValueError("Configuration exceeds 16 KiB limit")
+                configuration = json.loads(config_path.read_text(encoding="utf-8"))
+            analysis = analyze_capture(args.capture, configuration)
             if args.analyze == "text":
                 from ipsec_analyzer.reporting.technical import render_technical
                 print(render_technical(analysis), end="")
@@ -26,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps(analysis.to_dict(), indent=2))
             return 0
         result = read_capture(args.capture)
-    except (CaptureError, OSError) as exc:
+    except (CaptureError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"Capture error: {exc}", file=sys.stderr)
         return 2
     if args.summary:

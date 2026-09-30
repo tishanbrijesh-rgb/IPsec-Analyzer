@@ -8,7 +8,8 @@ PCAPNG packet blocks are reported as unsupported. The parser follows the
 [IETF pcapng draft](https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/06/)
 for section length and interface timestamp options.
 
-Supported link types are Ethernet (including up to two VLAN tags) and raw IP.
+Supported link types are Ethernet (including up to two VLAN tags), raw IP,
+Linux cooked capture v1 (SLL) and v2 (SLL2).
 Other link types generate packet diagnostics. IPv4 and IPv6 are decoded.
 IPv6 Hop-by-Hop, Routing, Fragment and Destination Options headers are
 traversed within a limit of eight headers. Fragmented IPv4 and IPv6

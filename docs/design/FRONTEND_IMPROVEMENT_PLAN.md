@@ -5,6 +5,13 @@
 passes checked in the local browser on 29 September 2026. Flow presentation
 and the full accessibility review remain open.
 
+**30 September update:** the dashboard now uses separate URL pages for
+assessment, threat matrix, IKE sessions, flows, inference, evidence, packets
+and reports. The landing page handles capture and optional sanitized
+configuration selection. Analysis pages read the same result ID and link to
+evidence or packet anchors across pages. A full keyboard and 320 px review of
+this navigation remains open.
+
 ## Goal
 
 Make the local IPsec dashboard easier to use for repeated capture review. An

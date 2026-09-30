@@ -78,12 +78,27 @@ def build(root: Path) -> tuple[dict, dict]:
         for label, result in rows:
             confusion[label][result["prediction"]] += 1
         scored = [(label, result) for label, result in rows if result["probabilities"] is not None]
+        accepted = [(label, result) for label, result in rows if not result["abstained"]]
+        bins = []
+        for lower, upper in ((0.0, 0.5), (0.5, 0.8), (0.8, 1.0)):
+            members = [(label, result) for label, result in accepted
+                       if lower <= result["confidence"] < upper or (upper == 1.0 and result["confidence"] == 1.0)]
+            bins.append({"lower": lower, "upper": upper, "count": len(members),
+                         "mean_confidence": sum(result["confidence"] for _, result in members) / len(members) if members else None,
+                         "accuracy": sum(result["prediction"] == label for label, result in members) / len(members) if members else None})
+        ece = sum((item["count"] / len(accepted)) * abs(item["mean_confidence"] - item["accuracy"])
+                  for item in bins if item["count"]) if accepted else None
         report[part] = {"confusion": confusion, "per_class": {},
-                        "coverage": sum(not result["abstained"] for _, result in rows) / len(rows),
+                        "run_count": len(rows), "accepted_count": len(accepted),
+                        "abstained_count": len(rows) - len(accepted),
+                        "coverage": len(accepted) / len(rows),
                         "accuracy_all_runs": sum(result["prediction"] == label for label, result in rows) / len(rows),
+                        "accuracy_accepted_only": sum(result["prediction"] == label for label, result in accepted) / len(accepted) if accepted else None,
                         "brier_accepted_only": (sum(sum((result["probabilities"][c] - (c == label)) ** 2 for c in classes)
                                                        for label, result in scored) / len(scored)) if scored else None,
-                        "calibration_sample_count": len(scored)}
+                        "calibration_sample_count": len(scored),
+                        "confidence_bins_accepted_only": bins,
+                        "ece_accepted_only": ece}
         for label in classes:
             tp = confusion[label][label]
             fp = sum(confusion[other][label] for other in classes if other != label)

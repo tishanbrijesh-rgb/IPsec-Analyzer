@@ -1,6 +1,11 @@
-# Prototype rule baseline
+# Packet-only prototype rule baseline
 
-The active baseline contains three revision 1.0 rules. The first,
+This page documents the visible IKE rules. The current
+configuration-aware policy and gated risk score are documented in
+[configuration and risk policy](RISK_AND_CONFIG_POLICY.md). The overall score
+is still withheld for capture-only analysis.
+
+The active baseline contains four revision 1.0 rules. The first,
 `IPSEC-IKE-LEGACY-001`, uses
 [RFC 9395 section 3](https://www.rfc-editor.org/rfc/rfc9395.html#section-3),
 which deprecates IKEv1 and recommends upgrading to IKEv2.
@@ -23,14 +28,21 @@ Missing, multiple, or ambiguously associated selected transforms yield
 was installed or that a Child SA uses the same transforms. `HIGH` severity is
 project policy for these two violations, not a severity assigned by RFC 8247.
 
+`IPSEC-IKEV2-PRF-MD5-001` applies the same selected-response evidence gate to
+the IKE PRF transform (type 2). [RFC 8247 section 2.2](https://www.rfc-editor.org/rfc/rfc8247.html#section-2.2)
+marks PRF_HMAC_MD5 (ID 1) MUST NOT. A selected ID 1 fails; another single
+selected PRF passes this narrow check. An absent or ambiguous selection is
+`UNKNOWN`. This checks IKE key derivation, not the authentication method or
+the ESP Child SA cipher.
+
 ## Score policy `observed-rule-pass-1`
 
 The API reports `assessed_rule_pass_percent = 100 × PASS / (PASS + FAIL)`, rounded
 to two decimal places, only when every applicable rule was evaluated; otherwise
 it is null. Coverage is
 `(PASS + FAIL) / (PASS + FAIL + UNKNOWN)`; `NOT_APPLICABLE` is excluded. The pass
-percentage describes only evaluated checks in this three-rule prototype and
+percentage describes only evaluated checks in this four-rule prototype and
 must be read with coverage. Each contribution is traceable through the rule
-version, subject, packet and evidence IDs. The overall `security_score` and
-`risk_score` remain null because Child SA, PFS, replay policy and other
-deployment dimensions are unobserved.
+version, subject, packet and evidence IDs. For capture-only analysis,
+`security_score` remains null and `risk_score.status` is `WITHHELD` because
+Child SA, PFS, replay policy and other deployment dimensions are unobserved.

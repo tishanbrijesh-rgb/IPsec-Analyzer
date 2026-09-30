@@ -17,6 +17,7 @@ def render_technical(analysis: Analysis) -> str:
         f"Rule set: {data['rule_set_version']}",
         f"Applicable rule coverage: {data['coverage']['evaluated_session_rules']}/{data['coverage']['total_session_rules']}",
         f"Assessed rule pass rate: {str(data['assessed_rule_pass_percent']) + '%' if data['assessed_rule_pass_percent'] is not None else 'unavailable'}",
+        f"Configuration match: {data['configuration']['status']}. {data['configuration']['reason']}",
         "",
         "Rule evaluations",
     ]
@@ -34,6 +35,19 @@ def render_technical(analysis: Analysis) -> str:
             lines.append(f"  Remediation: {finding['remediation']}")
     if not data["rule_evaluations"]:
         lines.append("- No IKE session was available for rule evaluation.")
-    lines.extend(["", f"Security score: unavailable. {data['score_reason']}", "", "Limitations"])
+    risk = data["risk_score"]
+    lines.extend(["", f"Risk policy: {risk['policy_version']}; status: {risk['status']}; weighted coverage: {risk['coverage']:.0%}."])
+    if risk["status"] == "SCORED":
+        lines.append(f"Risk score: {risk['value']}/100 ({risk['band']}); failed weight {risk['failed_weight']}/{risk['assessed_weight']} assessed weight.")
+    else:
+        lines.append(f"Risk score withheld: {risk['withheld_reason']}")
+    lines.append("Threat matrix")
+    for threat in data["threat_matrix"]:
+        lines.append(f"- {threat['category']} [{threat['severity']}]; mapping: {threat['mapping_version']}; asset: {threat['affected_asset']}; control: {threat['affected_control']}; finding: {threat['finding_id']}; evidence: {threat['evidence_ids']}; packets: {threat['evidence_packets']}.")
+        lines.append(f"  Impact: {threat['impact']}")
+        lines.append(f"  Remediation: {threat['remediation']}")
+    if not data["threat_matrix"]:
+        lines.append("- No failed-rule threat rows; unknown controls remain unassessed.")
+    lines.extend(["", "Limitations"])
     lines.extend(f"- {item}" for item in data["limitations"])
     return "\n".join(lines) + "\n"

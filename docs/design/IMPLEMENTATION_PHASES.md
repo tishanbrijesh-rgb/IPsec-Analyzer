@@ -1,6 +1,6 @@
 # Implementation and Improvement Phases
 
-**Status:** SIH26160-aligned working plan, revised 29 September 2026.  
+**Status:** SIH26160-aligned working plan, reconciled with the supplied problem statement on 30 September 2026.  
 **Architecture:** [ARCHITECTURE.md](../../ARCHITECTURE.md) defines the system contracts and boundaries.  
 **Rule:** a phase is complete only when its exit checks pass and its limitations are documented.
 
@@ -19,17 +19,25 @@ security/risk score, a threat matrix, and executive and technical output.
 
 | Requirement group | Delivery gate | Evidence boundary |
 | --- | --- | --- |
-| Testbed and dataset | Matrix of tunnel/transport, AES-128/256, GCM/CBC-HMAC, DH/PFS, IPv4/IPv6, and six traffic families, with manifests, hashes and split membership | Synthetic `*-like` profiles are not recordings of WhatsApp, VoIP or other real apps; AH is optional and must be marked covered or absent |
+| Testbed and dataset | Matrix of tunnel/transport, AES-128/256, GCM/CBC-HMAC, DH/PFS, IPv4/IPv6, and VoIP, messaging/WhatsApp, email, web, ICMP and video traffic families, with manifests, hashes and split membership | Synthetic `*-like` profiles are not recordings of WhatsApp, VoIP or other real apps; AH is optional and must be marked covered or absent |
 | Capture and protocol identification | Offline PCAP/PCAPNG and bounded live streams identify visible IKE versions, selected algorithms, key exchange groups, SA and ESP/AH facts | Parse directly visible fields deterministically; encrypted Child SA settings and passive mode/PFS/replay/lifetime claims remain `UNKNOWN` without another source |
-| Configuration and security assessment | Versioned crypto, compliance, SA, lifetime, replay, PFS, cipher and metadata checks with packet/config provenance and remediation | A lab configuration or authorized configuration import may establish hidden settings; a PCAP alone may not |
+| Configuration and security assessment | Versioned cryptographic strength, authentication, compliance, SA-parameter, lifetime, replay, PFS, cipher-suite and metadata-exposure checks with packet/config provenance and remediation | A lab configuration or authorized configuration import may establish hidden settings; a PCAP alone may not. A missing or unmatched source yields `UNKNOWN`, not a pass |
 | Score and threat matrix | Documented coverage-aware formula, risk bands and evidence-linked threat entries in API, dashboard and both reports | Unknown controls reduce coverage and cannot silently count as pass; inferred traffic class cannot change deterministic crypto findings |
-| AI traffic inference | Versioned ESP feature model, per-class holdout metrics, calibration assessment, confidence/abstention, `unknown/other` | State `INFERRED`; report evaluated scope and sample counts; do not claim decryption or real-app identity from synthetic labels |
-| Submission | Reproducible demo, video, docs, sanitized dataset card and model evaluation | Every demo claim maps to a run record, test or explicit limitation |
+| AI traffic inference | Versioned ESP feature model, per-class holdout metrics, calibration assessment, visible confidence/abstention, `unknown/other` | State `INFERRED`; report evaluated scope and sample counts; do not claim decryption or real-app identity from synthetic labels. Withhold numerical confidence when the model abstains |
+| Submission | Working prototype, AI artifact, interactive dashboard, executive/technical reports, reproducible demo video, technical docs, sanitized training/testing dataset card and model evaluation | Every demo claim maps to a run record, test or explicit limitation |
 
 Protocol identification is an automatic hybrid pipeline: deterministic parsing
 for visible IKE/ESP/AH facts and ML only for encrypted-traffic estimates where
 the model has support. Do not add a model prediction for a protocol fact that
 the parser can establish exactly.
+
+Mode inference requires a separate evidence contract: the outer PCAP can show
+IKE/ESP endpoints but does not by itself prove installed tunnel or transport
+mode. A matched authorized configuration may establish **configured mode**;
+installed mode needs live SA state or another reviewed source. Likewise,
+selected IKE encryption/authentication/DH transforms must not be described as
+the negotiated ESP Child SA cipher or authentication algorithm when those
+values are encrypted or otherwise unavailable.
 
 ## Dependency path
 
@@ -127,6 +135,9 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Implement versioned rules for only fields that Phase 1 can establish reliably.
 - Emit `PASS`, `FAIL`, `UNKNOWN` and `NOT_APPLICABLE` rule evaluations.
 - Generate findings with severity rationale, evidence, impact and remediation.
+- Extend the reviewed baseline to authentication strength, visible or
+  authorized SA parameters, cipher-suite strength and metadata exposure;
+  state which checks are observable, configured or unavailable.
 - Define separate security posture and evidence coverage measures. Publish a
   comprehensive risk score only after a versioned, coverage-aware formula,
   minimum-evidence gate, risk bands and sensitivity tests are reviewed.
@@ -139,6 +150,9 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - A weak and a compliant test scenario produce expected rule outcomes.
 - Partial captures do not receive an unjustified compliant result or full-confidence score.
 - Every finding and score contribution can be traced to a rule version and evidence.
+- Authentication, Child SA and metadata-exposure claims distinguish visible
+  packet facts, configured intent and installed state; unsupported checks are
+  `UNKNOWN` and excluded from favorable score claims.
 - Score and threat-matrix rows agree across JSON, dashboard, executive and
   technical reports; insufficient evidence withholds the score.
 
@@ -182,6 +196,8 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Train a simple structured-feature baseline before considering sequence models.
 - Use scenario/run-level holdout; report per-class metrics and confusion matrix.
 - Measure calibration, define abstention threshold and include an unknown/other route.
+- Expose confidence only for supported accepted estimates and report the
+  accepted-only denominator; measure false confidence on out-of-scope traffic.
 - Version model artifact, dataset and feature schema; keep inference separate from deterministic rules.
 - Evaluate the frozen model on new complete runs from another host or developer
   and on authorized real traffic before making application-identity claims.
@@ -193,6 +209,9 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Uncertain or out-of-scope flows abstain; model outputs are labeled `INFERRED`.
 - Report per-class precision/recall, confusion, coverage, abstentions and
   confidence calibration with denominators for the SIH submission dataset.
+- An independent complete-run challenge and privacy-reviewed real-application
+  evaluation determine whether application-identity claims are permitted; a
+  synthetic-only model stays labeled as a profile pilot.
 
 **Ownership:** `features/`, `ml/`, top-level `models/`, `data/`, `tests/`.
 
@@ -230,7 +249,9 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 - Measure throughput and latency on named hardware; state supported limits.
 - Record a demo that shows a strong and weak configuration, offline and bounded
   live input, mode/config provenance, score or justified withheld state, threat
-  matrix, model prediction and abstention, then executive and technical exports.
+  matrix, model prediction and abstention with confidence scope, then executive
+  and technical exports. Show the normal-communication control and optional AH
+  coverage state in the accompanying evidence index.
 - Freeze technical documentation, dataset card, model evaluation and known limitations.
 
 **Exit checks**
@@ -245,27 +266,25 @@ emitted until a classifier has passed the Phase 5 validation gate. See
 
 ## Remaining work order for SIH alignment
 
-1. **Assessment contract:** define an authorized configuration input and its
-   provenance, then add the missing mode, lifetime, replay and PFS checks with
-   `UNKNOWN` for capture-only cases. Add standards sources and positive,
-   negative and partial-evidence tests before showing new findings.
-2. **Risk and threat output:** define the score denominator, evidence threshold,
-   weights and risk bands; implement the threat matrix and keep API, dashboard
-   and report outputs identical. Publish score only for cases that pass its
-   minimum-evidence gate.
-3. **Remediation verification:** compare user-selected before/after runs with
+1. **Assessment breadth and review:** the bounded configuration input, four
+   configured checks, score and threat matrix are implemented. Review the
+   project risk policy independently; add supported authentication,
+   SA-parameter, cipher-suite and metadata-exposure rules with explicit
+   source limits and strong/weak/partial tests. Do not promote configured
+   intent to installed-state proof.
+2. **Remediation verification:** compare user-selected before/after runs with
    matched tunnel scope, capture conditions and positive evidence of the new
    state. Emit improved, unchanged, regressed or inconclusive; absence of a
    previously seen packet in a short capture is not proof of a fix. Treat this
    as a candidate differentiator, not a claim of uniqueness.
-4. **Dataset and AI:** finish the requested configuration coverage matrix,
-   normal-traffic control and dataset card; obtain independent physical-host or
-   developer and authorized real-traffic evaluation. Preserve the current
-   synthetic pilot label until those results exist.
-5. **Product verification:** exercise supported offline and live paths,
-   responsive and keyboard dashboard review, score/unknown displays, threat
-   drill-down and redacted exports against the same fixtures.
-6. **Submission:** freeze the technical docs and limitations, run the written
+3. **Dataset and AI:** the requested matrix, normal-traffic control, dataset
+   card and reproducible synthetic pilot are present. Obtain independent
+   physical-host or developer and privacy-reviewed real-traffic evaluation;
+   retain synthetic profile labels until those results support more.
+4. **Product and live verification:** the local API, pages and exports pass
+   their bounded checks. Repeat live-load measurements on named hardware and
+   decide the demo hosting, retention and access boundary before deployment.
+5. **Submission:** freeze the technical docs and limitations, run the written
    demo on the delivery machine, record the video, and assemble every expected
    deliverable with a traceable evidence index.
 

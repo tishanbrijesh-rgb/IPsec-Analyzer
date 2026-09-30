@@ -32,6 +32,18 @@ def normalize_packet(
             ip_bytes = frame[offset:]
         elif link_type == 101:  # Raw IP
             ip_bytes = frame
+        elif link_type == 113:  # Linux cooked capture v1
+            if len(frame) < 16:
+                return _warning(event, "TRUNCATED_SLL", "Linux cooked v1 header is incomplete")
+            if int.from_bytes(frame[14:16], "big") not in (0x0800, 0x86DD):
+                return event
+            ip_bytes = frame[16:]
+        elif link_type == 276:  # Linux cooked capture v2
+            if len(frame) < 20:
+                return _warning(event, "TRUNCATED_SLL2", "Linux cooked v2 header is incomplete")
+            if int.from_bytes(frame[0:2], "big") not in (0x0800, 0x86DD):
+                return event
+            ip_bytes = frame[20:]
         else:
             return _warning(event, "UNSUPPORTED_LINK_TYPE", f"Link type {link_type} is unsupported")
         if not ip_bytes:

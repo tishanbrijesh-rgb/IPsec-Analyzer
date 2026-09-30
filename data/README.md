@@ -1,5 +1,19 @@
 # Dataset status and handling
 
+For an item-by-item Phase 4 testbed audit, see the [coverage matrix](../docs/design/PHASE4_COVERAGE_MATRIX.md).
+
+## Normal-communication negative control
+
+`control/plain-icmp-01.pcap` and its secret-free JSON record are a separate
+unprotected IPv4 ICMP lab trace. On 30 September 2026 the isolated WSL2 run
+completed three pings with three replies. The capture has six ICMP packets in
+both outer-peer directions, no IKE/ESP/AH packets or capture diagnostics, and
+SHA-256 `02f02a863fcd81e8bd96039f36cee491f6a723a16d03d88fb8710c440e3173b0`.
+The tcpdump log reported zero kernel drops. The trace is intentionally outside
+`sample/` and `dataset-index.json`; it is a negative control, not an IPsec
+traffic-class training example. Its label reflects the isolated lab command,
+not a passive proof that no unrelated VPN state existed on the host.
+
 Forty-four small, controlled strongSwan WSL runs are included in `sample/` as
 filtered outer-link PCAPs with secret-free JSON records. Three cover configured
 tunnel, transport and PFS differences; six use synthetic traffic profiles;

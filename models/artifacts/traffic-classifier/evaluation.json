@@ -1,0 +1,290 @@
+{
+  "dataset_version": "f1b09b71ce9815be095ce1fe626fd2a72a3dcc4cb6ee6dc8b4b069919a85dbde",
+  "feature_schema_version": "esp-flow-2",
+  "model_version": "synthetic-centroid-2",
+  "partitions": {
+    "test": [
+      "phase4-email-05",
+      "phase4-icmp-04",
+      "phase4-messaging-03",
+      "phase4-video-02",
+      "phase4-voip-01",
+      "phase4-web-05"
+    ],
+    "train": [
+      "phase4-email-01",
+      "phase4-email-02",
+      "phase4-email-03",
+      "phase4-icmp-01",
+      "phase4-icmp-02",
+      "phase4-icmp-05",
+      "phase4-messaging-01",
+      "phase4-messaging-04",
+      "phase4-messaging-05",
+      "phase4-video-03",
+      "phase4-video-04",
+      "phase4-video-05",
+      "phase4-voip-02",
+      "phase4-voip-03",
+      "phase4-voip-04",
+      "phase4-web-01",
+      "phase4-web-02",
+      "phase4-web-03"
+    ],
+    "validation": [
+      "phase4-email-04",
+      "phase4-icmp-03",
+      "phase4-messaging-02",
+      "phase4-video-01",
+      "phase4-voip-05",
+      "phase4-web-04"
+    ]
+  },
+  "scope": "single-host synthetic pilot; no real-application generalization claim",
+  "temperature": 0.25,
+  "test": {
+    "abstained_count": 2,
+    "accepted_count": 4,
+    "accuracy_accepted_only": 1.0,
+    "accuracy_all_runs": 0.6666666666666666,
+    "brier_accepted_only": 1.3038060993434793e-05,
+    "calibration_sample_count": 4,
+    "confidence_bins_accepted_only": [
+      {
+        "accuracy": null,
+        "count": 0,
+        "lower": 0.0,
+        "mean_confidence": null,
+        "upper": 0.5
+      },
+      {
+        "accuracy": null,
+        "count": 0,
+        "lower": 0.5,
+        "mean_confidence": null,
+        "upper": 0.8
+      },
+      {
+        "accuracy": 1.0,
+        "count": 4,
+        "lower": 0.8,
+        "mean_confidence": 0.998198996550901,
+        "upper": 1.0
+      }
+    ],
+    "confusion": {
+      "email-like": {
+        "email-like": 1,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 0,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 0
+      },
+      "icmp": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 1,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 0
+      },
+      "messaging-like": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 1,
+        "unknown/other": 0,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 0
+      },
+      "video-like": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 1,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 0
+      },
+      "voip-like": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 0,
+        "video-like": 0,
+        "voip-like": 1,
+        "web-like": 0
+      },
+      "web-like": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 0,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 1
+      }
+    },
+    "coverage": 0.6666666666666666,
+    "ece_accepted_only": 0.001801003449098948,
+    "per_class": {
+      "email-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      },
+      "icmp": {
+        "precision": 0,
+        "recall": 0.0,
+        "support": 1
+      },
+      "messaging-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      },
+      "video-like": {
+        "precision": 0,
+        "recall": 0.0,
+        "support": 1
+      },
+      "voip-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      },
+      "web-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      }
+    },
+    "run_count": 6
+  },
+  "threshold": 0.5,
+  "validation": {
+    "abstained_count": 1,
+    "accepted_count": 5,
+    "accuracy_accepted_only": 1.0,
+    "accuracy_all_runs": 0.8333333333333334,
+    "brier_accepted_only": 2.66713864175493e-06,
+    "calibration_sample_count": 5,
+    "confidence_bins_accepted_only": [
+      {
+        "accuracy": null,
+        "count": 0,
+        "lower": 0.0,
+        "mean_confidence": null,
+        "upper": 0.5
+      },
+      {
+        "accuracy": null,
+        "count": 0,
+        "lower": 0.5,
+        "mean_confidence": null,
+        "upper": 0.8
+      },
+      {
+        "accuracy": 1.0,
+        "count": 5,
+        "lower": 0.8,
+        "mean_confidence": 0.9992783176555461,
+        "upper": 1.0
+      }
+    ],
+    "confusion": {
+      "email-like": {
+        "email-like": 1,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 0,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 0
+      },
+      "icmp": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 1,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 0
+      },
+      "messaging-like": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 1,
+        "unknown/other": 0,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 0
+      },
+      "video-like": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 0,
+        "video-like": 1,
+        "voip-like": 0,
+        "web-like": 0
+      },
+      "voip-like": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 0,
+        "video-like": 0,
+        "voip-like": 1,
+        "web-like": 0
+      },
+      "web-like": {
+        "email-like": 0,
+        "icmp": 0,
+        "messaging-like": 0,
+        "unknown/other": 0,
+        "video-like": 0,
+        "voip-like": 0,
+        "web-like": 1
+      }
+    },
+    "coverage": 0.8333333333333334,
+    "ece_accepted_only": 0.0007216823444539111,
+    "per_class": {
+      "email-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      },
+      "icmp": {
+        "precision": 0,
+        "recall": 0.0,
+        "support": 1
+      },
+      "messaging-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      },
+      "video-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      },
+      "voip-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      },
+      "web-like": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1
+      }
+    },
+    "run_count": 6
+  }
+}

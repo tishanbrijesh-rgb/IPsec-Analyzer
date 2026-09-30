@@ -19,6 +19,34 @@ unavailable. The capture contains documentation-range addresses and no real
 user traffic. Its generator reuses the same packet construction as the parser
 tests.
 
+## P0 configuration, score and threat demonstration
+
+Generate a matched strong and weak **synthetic** pair in the ignored generated
+directory. These snapshots are purpose-built lab inputs; their 1970 timestamps
+match the deterministic fixture clock and do not attest to any installed SA.
+
+```bash
+PYTHONPATH=src:. python3 -m testbed.scripts.build_demo_capture testbed/generated/p0-strong.pcap --profile strong --configuration-output testbed/generated/p0-strong.json
+PYTHONPATH=src:. python3 -m testbed.scripts.build_demo_capture testbed/generated/p0-weak.pcap --profile weak --configuration-output testbed/generated/p0-weak.json
+PYTHONPATH=src python3 -m ipsec_analyzer.ingestion.cli testbed/generated/p0-strong.pcap --analyze text --configuration testbed/generated/p0-strong.json
+PYTHONPATH=src python3 -m ipsec_analyzer.ingestion.cli testbed/generated/p0-weak.pcap --analyze text --configuration testbed/generated/p0-weak.json
+```
+
+The strong fixture has 0/100 `LOW` project-policy risk and no failed-rule
+threat row. The weak fixture has 60/100 `HIGH` risk and five rows: selected
+DES plus mode, lifetime, replay and PFS configuration findings. Both selected
+IKE transform rules are evaluated, so weighted coverage is 100%. Upload each PCAP
+with its matching JSON in the local dashboard. Follow the weak DES link to
+packet 2 and configured rows to their source IDs and collection timestamps.
+Export full and shared JSON/PDF copies and compare the score status and threat
+count. Upload either PCAP **without** configuration to show the score withheld
+while the DES finding remains visible.
+
+This score is an explainable project policy over selected rules, not a general
+IPsec certification. The selected transform and configured settings do not
+prove installation. The separate bounded live check below demonstrates capture
+parity; the synthetic score pair does not establish live configuration parity.
+
 ## 2. Start the dashboard
 
 Keep this WSL terminal open:

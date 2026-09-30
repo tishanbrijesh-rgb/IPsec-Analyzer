@@ -17,7 +17,7 @@ def load_model(path: str | Path) -> dict:
         raise ModelUnavailable("Classifier artifact is absent or too large")
     try:
         model = json.loads(source.read_text(encoding="utf-8"))
-        if model["model_version"] != MODEL_VERSION or model["feature_schema_version"] != FEATURE_SCHEMA_VERSION:
+        if not isinstance(model, dict) or model["model_version"] != MODEL_VERSION or model["feature_schema_version"] != FEATURE_SCHEMA_VERSION:
             raise ValueError("Incompatible classifier")
         names = model["feature_names"]
         classes = model["classes"]
@@ -28,15 +28,22 @@ def load_model(path: str | Path) -> dict:
         if set(model["centroids"]) != set(classes):
             raise ValueError("Invalid centroids")
         vectors = [model["center"], model["scale"], *model["centroids"].values()]
-        if any(len(v) != len(names) or any(not isinstance(x, (int, float)) or not math.isfinite(x) for x in v) for v in vectors):
+        if any(not isinstance(v, list) or len(v) != len(names)
+               or any(type(x) not in (int, float) or not math.isfinite(x) for x in v)
+               for v in vectors):
             raise ValueError("Invalid numeric parameters")
         if any(x <= 0 for x in model["scale"]):
             raise ValueError("Invalid scale")
-        if not 0 < model["temperature"] <= 100 or not 0 < model["threshold"] <= 1:
+        if (type(model["temperature"]) not in (int, float)
+                or type(model["threshold"]) not in (int, float)
+                or not math.isfinite(model["temperature"])
+                or not math.isfinite(model["threshold"])
+                or not 0 < model["temperature"] <= 100
+                or not 0 < model["threshold"] <= 1):
             raise ValueError("Invalid calibration")
-        if model["minimum_packets"] < 2:
+        if type(model["minimum_packets"]) is not int or model["minimum_packets"] < 2:
             raise ValueError("Invalid support bound")
-        if not isinstance(model["max_distance"], (int, float)) or not math.isfinite(model["max_distance"]) or model["max_distance"] <= 0:
+        if type(model["max_distance"]) not in (int, float) or not math.isfinite(model["max_distance"]) or model["max_distance"] <= 0:
             raise ValueError("Invalid support distance")
         return model
     except (UnicodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
@@ -47,11 +54,17 @@ def _scores(flow: dict, model: dict) -> tuple[dict[str, float], dict[str, float]
     features = flow_features(flow)
     vector = [(features[name] - mid) / scale for name, mid, scale in zip(FEATURE_NAMES, model["center"], model["scale"])]
     distances = {name: sum((a - b) ** 2 for a, b in zip(vector, model["centroids"][name])) for name in model["classes"]}
+    if any(not math.isfinite(distance) for distance in distances.values()):
+        raise ValueError("Flow lies outside finite model support")
     logits = {name: -distance / model["temperature"] for name, distance in distances.items()}
     peak = max(logits.values())
     weights = {name: math.exp(value - peak) for name, value in logits.items()}
     total = sum(weights.values())
+    if not math.isfinite(total) or total <= 0:
+        raise ValueError("Invalid model probability normalization")
     probabilities = {name: value / total for name, value in weights.items()}
+    if any(not math.isfinite(value) for value in probabilities.values()):
+        raise ValueError("Non-finite model probability")
     return probabilities, distances
 
 
@@ -63,7 +76,7 @@ def predict(flow: dict, model: dict) -> dict:
         return dict(base, reason="Unsupported or insufficient ESP flow")
     try:
         probabilities, distances = _scores(flow, model)
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return dict(base, reason="Incompatible flow features")
     label = max(probabilities, key=probabilities.get)
     confidence = probabilities[label]

@@ -57,6 +57,18 @@ and whether both Child SAs installed. Capture files may be shared only after
 checking their contents and local policy. Record the reviewer and host in the
 Phase 4 status before calling independent reproduction complete.
 
+Run the read-only consistency audit from the repository root after both runs:
+
+```sh
+PYTHONPATH=src python3 -m testbed.scripts.audit_reproduction testbed/generated/repro-modern-01 testbed/generated/repro-cbc-01
+```
+
+It checks each secret-free record against its PCAP, selected IKE transform,
+bidirectional ESP flows and the installed Child SA line under each peer heading.
+It prints a compact JSON summary and does not publish or modify the captures.
+The audit does not establish who operated the host, physical host independence,
+or whether the installed state was captured at the same instant as every packet.
+
 Before accepting new records into the shared dataset, run
 `PYTHONPATH=src python -m testbed.scripts.build_dataset_index <staging-dir> --check`
 on a reviewed staging directory containing only the candidate `.pcap` and
@@ -104,3 +116,20 @@ This verifies reproduction on a second Linux installation. The Kali VM appears
 to run on the user's original Windows machine, and the same operator performed
 the checks. Independent physical-host or another-developer attestation and
 external model validation remain open.
+
+## Additional Kali VM run on 30 September 2026
+
+The user reran the guide's `voip-like` seed-201 modern and CBC scenarios as
+`repro-modern-01` and `repro-cbc-01` in Kali. The displayed secret-free records
+showed 88 packets, one IKE session and two ESP flows for each run, with distinct
+capture hashes and the expected scenario labels. The user supplied the
+`sa-status.log` installed-SA lines for both peers in each run:
+
+- Modern: two `INSTALLED, TUNNEL, ESP:AES_GCM_16-256` lines.
+- CBC: two `INSTALLED, TUNNEL, ESP:AES_CBC-128/HMAC_SHA2_256_128` lines.
+
+This confirms the reported installed ESP selections on both Kali peers. The
+provided excerpt does not show the analyzer's selected IKE transform IDs or an
+independent reanalysis of these new PCAPs. It is another run on the Kali VM,
+not another developer or a separate physical host, and it does not by itself
+verify Child SA PFS behavior on rekey.

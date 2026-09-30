@@ -17,6 +17,19 @@ def ike_sa_message(response: bool = False) -> bytes:
     return header + sa
 
 
+def ike_sa_message_with_dh(response: bool = False, encryption_id: int = 12) -> bytes:
+    """A selected ENCR transform plus MODP group 14 for complete demo coverage."""
+    raw = bytearray(ike_sa_message(response))
+    raw[40] = 3  # Another transform follows.
+    raw[39] = 2  # Declared transform count.
+    raw[46:48] = encryption_id.to_bytes(2, "big")
+    raw[24:28] = (len(raw) + 8).to_bytes(4, "big")
+    raw[30:32] = (int.from_bytes(raw[30:32], "big") + 8).to_bytes(2, "big")
+    raw[34:36] = (int.from_bytes(raw[34:36], "big") + 8).to_bytes(2, "big")
+    raw.extend(b"\x00\x00\x00\x08\x04\x00\x00\x0e")
+    return bytes(raw)
+
+
 def test_v2_sa_proposal_and_response(tmp_path):
     frames = [
         ipv4_packet(17, udp(500, 500, ike_sa_message())),

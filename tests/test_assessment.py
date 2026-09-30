@@ -116,9 +116,9 @@ def test_packet_summary_cap_is_reported(tmp_path, monkeypatch):
 def test_request_only_does_not_pass_selected_rules(tmp_path):
     packet = ipv4_packet(17, udp(500, 500, ike_sa_message()))
     data = analyze_capture(write_pcap(tmp_path / "request.pcap", [packet])).to_dict()
-    selected = [item for item in data["rule_evaluations"] if item["rule_id"] != "IPSEC-IKE-LEGACY-001"]
-    assert [item["status"] for item in selected] == ["UNKNOWN", "UNKNOWN"]
-    assert data["coverage"]["evaluated_ratio"] == 1 / 3
+    selected = [item for item in data["rule_evaluations"] if item["rule_id"].startswith("IPSEC-IKEV2-")]
+    assert [item["status"] for item in selected] == ["UNKNOWN", "UNKNOWN", "UNKNOWN"]
+    assert data["coverage"]["evaluated_ratio"] == 1 / 8
     assert data["assessed_rule_pass_percent"] is None
 
 
@@ -127,8 +127,8 @@ def test_ikev1_selected_rules_not_applicable(tmp_path):
     raw[16:18] = b"\x00\x10"
     packet = ipv4_packet(17, udp(500, 500, bytes(raw)))
     data = analyze_capture(write_pcap(tmp_path / "v1-na.pcap", [packet])).to_dict()
-    assert [item["status"] for item in data["rule_evaluations"]] == ["FAIL", "NOT_APPLICABLE", "NOT_APPLICABLE"]
-    assert data["coverage"]["evaluated_ratio"] == 1
+    assert [item["status"] for item in data["rule_evaluations"][:4]] == ["FAIL", "NOT_APPLICABLE", "NOT_APPLICABLE", "NOT_APPLICABLE"]
+    assert data["coverage"]["evaluated_ratio"] == 1 / 5
     assert data["assessed_rule_pass_percent"] == 0
 
 

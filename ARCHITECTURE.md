@@ -71,6 +71,17 @@ flowchart LR
 
 Captures, configuration exports, testbed keys and labels are sensitive. Ground
 truth is used to evaluate blind analysis, never supplied as packet evidence.
+The CLI and local API accept the sanitized JSON contract documented in
+[configuration evidence v1](docs/design/CONFIGURATION_EVIDENCE_V1.md). It
+matches capture hash, peer pair, one unambiguous session and collection time;
+the result labels values `CONFIGURED`. Four configured-control rules feed the
+versioned, coverage-gated [risk policy](docs/standards/RISK_AND_CONFIG_POLICY.md)
+and evidence-linked threat rows. The API/dashboard and reports expose the same
+assessment. Configured intent is not installed-SA attestation.
+The local dashboard serves a capture landing page and dedicated analysis pages
+at `/analyses/{id}/{view}`. Each page reads the same bounded in-memory result;
+cross-page links carry the analysis ID and evidence or packet anchor.
+
 An authorized configuration export may be used in a separate configuration-aware
 assessment only after explicit source validation and matching to the captured
 tunnel; its provenance must remain visible in every resulting finding. Secrets
@@ -101,9 +112,11 @@ daemon is added only if demonstrated need justifies it.
 
 Current offline results record the capture identity and hash, packet count,
 analysis version, rule-set version, parsed sessions, flows, evidence,
-evaluations, failed-rule findings, scoring-policy version and limitations. They
-do not yet include an authorized-configuration import, comprehensive score or
-threat matrix. The Phase 4 lab generator records scenario configuration and
+evaluations, failed-rule findings, scoring-policy version and limitations. An
+optional sanitized configuration snapshot adds configured evidence, four
+project-policy controls, a coverage-gated risk score and threat rows. The
+score describes these limited controls and is withheld for capture-only or
+insufficient-evidence cases. The Phase 4 lab generator records scenario configuration and
 hashes; a separate registrar records capture identity after checking visible
 IKE selection and ESP. Neither record by itself attests that a daemon loaded
 the configuration. The local API analyzes an upload synchronously and stores
@@ -223,7 +236,7 @@ correct.
 
 ### 5.7 API, dashboard and reporting
 
-The current API returns synchronous analysis results containing sessions, exchanges, flows, evidence, three versioned rule evaluations per session, failed-rule findings, coverage, a narrow assessed-rule pass rate and explicit unknown fields. The overall security/risk scores remain withheld. Focused resources expose sessions, flows, findings and evidence; status is `complete` while a result remains in memory, then unavailable after eviction or restart. The analysis result also includes at most 5,000 metadata-only summaries for packets cited by rule evaluations or selected IKE responses, with an explicit truncation flag; frame bytes and payloads are excluded. The dashboard shows rule and exchange detail, packet references, a separate `INFERRED` traffic table, limitations and report actions. One versioned report document feeds text, HTML, a bounded text-only PDF and JSON. Shared copies in all formats omit capture identifiers, endpoint addresses and SPI values. Durable jobs, persistent storage and deployment authentication remain future capabilities.
+The current API returns synchronous analysis results containing sessions, exchanges, flows, evidence, seven versioned rule evaluations per session, failed-rule findings, coverage, a narrow packet-rule pass rate, a gated project-policy risk score, threat rows and explicit unknown fields. Focused resources expose sessions, flows, findings and evidence; status is `complete` while a result remains in memory, then unavailable after eviction or restart. The analysis result also includes at most 5,000 metadata-only summaries for packets cited by rule evaluations or selected IKE responses, with an explicit truncation flag; frame bytes and payloads are excluded. The dashboard serves separate assessment, threat, session, flow, inference, evidence, packet and report pages. One versioned report document feeds text, HTML, a bounded text-only PDF and JSON. Shared copies in all formats omit capture identifiers, endpoint addresses, SPI values and configuration source IDs. Durable jobs, persistent storage and deployment authentication remain future capabilities.
 
 ### 5.8 Paired remediation verification (planned)
 
@@ -318,15 +331,16 @@ another-developer attestation, and the dataset remains synthetic.
 
 ## 9. Interfaces, persistence and security
 
-Current local API resources are `POST /api/analyses` (raw capture bytes),
+Current local API resources are `POST /api/analyses` (raw capture bytes or
+multipart capture plus sanitized configuration JSON),
 `GET /api/analyses/{id}`, focused `/status`, `/sessions`, `/flows`, `/findings`,
 `/evidence` and `/evidence/{evidence_id}` resources, and
 `/report?format=text|html|pdf|json`. The report endpoint accepts
-`redacted=true` in every format. The dashboard is served at `/`. A future
-configuration-aware request must use an explicit opt-in input and return
-source-validation and tunnel-match status; it must not turn a testbed label
-into a packet finding. New score and threat-matrix resources or fields must
-derive from the same canonical report document used by all exports. Persistent
+`redacted=true` in every format. The capture landing page is served at `/`,
+with analysis pages at `/analyses/{id}/{view}`. The configuration-aware request
+requires explicit opt-in and returns tunnel-match status; it does not turn a
+testbed label into a packet finding. Score and threat-matrix fields derive
+from the same canonical report document used by all exports. Persistent
 storage and live start/stop/status remain target interfaces. Validate uploads,
 paths, formats and query bounds. Current upload limit is 16 MiB, results are
 bounded in memory and raw uploads are deleted after processing. Bind the

@@ -1,5 +1,24 @@
 # Pull Request and Change Requirements
 
+## P0 configuration assessment and risk (30 September 2026)
+
+- Added opt-in, 16 KiB sanitized configuration JSON input to the analysis CLI,
+  API and dashboard.
+- Bound configuration values to capture hash, peer pair, an unambiguous IKE
+  session and a 24-hour collection window. Missing, stale and unmatched values
+  remain unknown. Values carry source and collection provenance and are labeled
+  `CONFIGURED`, never packet-observed or installed.
+- Added four versioned project-policy rules, a weighted 80% coverage gate with
+  replay/PFS requirements, risk bands and evidence-linked threat rows. The
+  report document drives full and redacted JSON, text, HTML and PDF outputs.
+- Added dedicated dashboard pages for assessment, threat matrix, IKE sessions,
+  flows, inference, evidence, packets and reports, with cross-page evidence
+  links. The capture form remains on the landing page.
+- Browser checked the revised matched weak snapshot: 60/100 risk, five threat
+  rows, and direct evidence and report pages.
+- Verification: full `python -m pytest -q` pass after new rule, score and API
+  tests. Final strong/weak live demo, accessibility pass and video remain open.
+
 ## 1. Purpose
 
 Every change to SIH26160 must preserve the project's architecture,

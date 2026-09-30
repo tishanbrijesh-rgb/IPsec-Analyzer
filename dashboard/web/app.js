@@ -1,4 +1,8 @@
 const fileInput = document.getElementById("capture-file");
+const configurationInput = document.getElementById("configuration-file");
+configurationInput.addEventListener("change", () => {
+  document.getElementById("configuration-name").textContent = configurationInput.files[0]?.name || "Choose file";
+});
 const fileName = document.getElementById("file-name");
 const form = document.getElementById("upload-form");
 const button = document.getElementById("analyze-button");
@@ -10,6 +14,10 @@ const results = document.getElementById("results");
 const emptyGuide = document.getElementById("empty-guide");
 const ruleFilter = document.getElementById("rule-filter");
 let currentEvaluations = [];
+let currentAnalysisId = null;
+const views = {assessment: "findings-title", threats: "threat-title", sessions: "sessions-title",
+  flows: "flows-title", inference: "inference-title", evidence: "evidence-title",
+  packets: "packets-title", reports: "capture-title"};
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
@@ -18,7 +26,7 @@ fileInput.addEventListener("change", () => {
   selectedFile.textContent = file ? `${file.name} · ${(file.size / 1024).toFixed(1)} KiB selected` : "";
   results.hidden = true;
   emptyGuide.hidden = false;
-  if (location.search) history.replaceState(null, "", "/");
+  if (location.search && location.pathname === "/") history.replaceState(null, "", "/");
   setStatus(file ? "Ready to analyze the selected capture." : "Choose a local capture to begin.");
 });
 
@@ -98,6 +106,12 @@ function formatEvidenceValue(item) {
 function evidenceValueCell(row, item) {
   const valueCell = row.insertCell();
   valueCell.textContent = formatEvidenceValue(item);
+  if (item.state === "CONFIGURED") {
+    const source = document.createElement("small");
+    source.className = "evidence-source";
+    source.textContent = ` Configured source: ${item.source_id}; collected ${item.collected_at}.`;
+    valueCell.appendChild(source);
+  }
   if (item.value && typeof item.value === "object") {
     const detail = document.createElement("details");
     const summary = document.createElement("summary");
@@ -113,15 +127,31 @@ function evidenceValueCell(row, item) {
 function packetLinks(parent, indices, summariesByIndex) {
   for (const index of indices || []) {
     const link = document.createElement("a");
-    link.href = summariesByIndex.has(index) ? "#packet-" + index : "#packets-title";
+    link.href = currentAnalysisId && summariesByIndex.has(index)
+      ? `/analyses/${currentAnalysisId}/packets#packet-${index}`
+      : currentAnalysisId ? `/analyses/${currentAnalysisId}/packets` : "#packets-title";
     link.textContent = "Packet " + index;
     parent.appendChild(link);
   }
 }
 
 function render(data, id) {
+  currentAnalysisId = id;
   results.hidden = false;
   emptyGuide.hidden = true;
+  document.querySelector(".page-heading").hidden = true;
+  const view = location.pathname.split("/").at(-1) in views ? location.pathname.split("/").at(-1) : "assessment";
+  for (const section of document.querySelectorAll("[data-page]")) section.hidden = section.dataset.page !== view;
+  for (const link of document.querySelectorAll("[data-page-link]")) {
+    link.href = `/analyses/${id}/${link.dataset.pageLink}`;
+    if (link.dataset.pageLink === view) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+  const grid = document.querySelector(".content-grid");
+  grid.classList.toggle("single-page", view !== "assessment");
+  document.querySelector(".main-column").hidden = view === "reports";
+  document.querySelector(".side-column").hidden = !["assessment", "reports"].includes(view);
+  document.title = `${document.querySelector(`[data-page-link="${view}"]`).textContent} | IPsec Analyzer`;
   document.getElementById("capture-id").textContent = data.capture.id;
   document.getElementById("rail-format").textContent = data.capture.format.toUpperCase();
   document.getElementById("analysis-version").textContent = data.analysis_version;
@@ -129,6 +159,13 @@ function render(data, id) {
   document.getElementById("metric-sessions").textContent = data.sessions.length;
   document.getElementById("metric-flows").textContent = data.flows.length;
   document.getElementById("metric-findings").textContent = data.finding_count;
+  document.getElementById("metric-score").textContent = data.risk_score.status === "SCORED"
+    ? `${data.risk_score.value}/100 · ${data.risk_score.band}` : "Withheld";
+  document.getElementById("metric-score-note").textContent = data.risk_score.status === "SCORED"
+    ? `${Math.round(data.risk_score.coverage * 100)}% weighted rule coverage · ${data.risk_score.policy_version}`
+    : data.risk_score.withheld_reason;
+  document.getElementById("config-status").textContent = data.configuration.status;
+  document.getElementById("config-reason").textContent = data.configuration.reason;
   currentEvaluations = data.rule_evaluations;
   ruleFilter.value = "all";
   document.getElementById("ai-status").textContent = data.ai_inference.status;
@@ -173,7 +210,7 @@ function render(data, id) {
     badgeCell.appendChild(badge);
     const packetCell = row.insertCell();
     if (result.evidence_packets.length) packetLinks(packetCell, result.evidence_packets, summariesByIndex);
-    else packetCell.textContent = "Unavailable";
+    else packetCell.textContent = result.evidence_state === "CONFIGURED" ? "Configuration" : "Unavailable";
     const detailCell = row.insertCell();
     detailCell.appendChild(document.createTextNode(result.rationale));
     const subject = document.createElement("span");
@@ -184,6 +221,10 @@ function render(data, id) {
     const summary = document.createElement("summary");
     summary.textContent = "Evidence and remediation";
     detail.appendChild(summary);
+    detailLine(detail, "Rule version", result.rule_version);
+    detailLine(detail, "Finding ID", result.status === "FAIL"
+      ? `${result.subject_id}:${result.rule_id}:${result.rule_version}` : "No failed finding");
+    detailLine(detail, "Evidence state", result.evidence_state);
     detailLine(detail, "Subject", result.subject_id);
     detailLine(detail, "Severity", result.severity || "Not assigned");
     detailLine(detail, "Impact", result.impact || "No failed-rule impact recorded");
@@ -196,18 +237,42 @@ function render(data, id) {
       baseline.target = "_blank";
       detail.appendChild(baseline);
     }
-    for (const id of result.evidence_ids || []) {
-      const target = evidenceById.get(id);
+    for (const evidenceId of result.evidence_ids || []) {
+      const target = evidenceById.get(evidenceId);
       if (!target) continue;
       const link = document.createElement("a");
-      link.href = "#" + target.anchor;
-      link.textContent = "Evidence " + id.split(":").at(-1);
+      link.href = `/analyses/${id}/evidence#` + target.anchor;
+      link.textContent = "Evidence " + evidenceId.split(":").at(-1);
       detail.appendChild(link);
     }
     detailCell.appendChild(detail);
   }
   if (!data.rule_evaluations.length) emptyRow(findings, 4, "No IKE session was available for rule evaluation.");
   applyRuleFilter();
+
+  const threats = document.getElementById("threat-body");
+  threats.replaceChildren();
+  for (const threat of data.threat_matrix || []) {
+    const row = threats.insertRow();
+    cell(row, threat.category);
+    cell(row, threat.severity);
+    cell(row, threat.affected_asset);
+    cell(row, threat.affected_control);
+    const detail = row.insertCell();
+    detailLine(detail, "Finding", threat.finding_id);
+    detailLine(detail, "Mapping version", threat.mapping_version);
+    detailLine(detail, "Impact", threat.impact);
+    detailLine(detail, "Remediation", threat.remediation);
+    for (const evidenceId of threat.evidence_ids || []) {
+      const target = evidenceById.get(evidenceId);
+      if (!target) continue;
+      const link = document.createElement("a");
+      link.href = `/analyses/${id}/evidence#` + target.anchor;
+      link.textContent = "Evidence " + evidenceId.split(":").at(-1);
+      detail.appendChild(link);
+    }
+  }
+  if (!threats.rows.length) emptyRow(threats, 5, "No failed-rule threat rows. Unknown controls are not treated as safe.");
 
   const sessions = document.getElementById("sessions-body");
   sessions.replaceChildren();
@@ -229,7 +294,7 @@ function render(data, id) {
     const selectedEvidence = evidenceById.get(selectedEvidenceId);
     if (selectedEvidence && session.selected_evidence_packet != null) {
       const link = document.createElement("a");
-      link.href = "#" + selectedEvidence.anchor;
+      link.href = `/analyses/${id}/evidence#` + selectedEvidence.anchor;
       link.textContent = "Trace selected proposal to packet " + session.selected_evidence_packet;
       exchangeDetail.appendChild(link);
     }
@@ -265,7 +330,7 @@ function render(data, id) {
     const row = inference.insertRow();
     cell(row, item.flow_id.split(":").at(-1), "mono");
       cell(row, item.abstained ? "Unknown / abstained: " + (item.reason || "Reason unavailable") : "INFERRED: " + item.prediction);
-      cell(row, (item.model_version || "Model unavailable") + " · " + (item.confidence == null ? "confidence unavailable" : Math.round(item.confidence * 100) + "% pilot confidence"));
+      cell(row, (item.model_version || "Model unavailable") + " · " + (item.confidence == null ? "confidence unavailable" : Math.round(item.confidence * 100) + "% pilot model score; probability unvalidated"));
     cell(row, item.evidence_refs.length ? item.evidence_refs.join(", ") : "Unavailable");
   }
   if (!inference.rows.length) emptyRow(inference, 4, "No classifier result is available for this capture.");
@@ -288,7 +353,7 @@ function render(data, id) {
     evidenceValueCell(row, item);
     const packetCell = row.insertCell();
     if (item.packet_indices.length) packetLinks(packetCell, item.packet_indices, summariesByIndex);
-    else packetCell.textContent = "Unavailable";
+    else packetCell.textContent = item.state === "CONFIGURED" ? "Configuration source" : "Unavailable";
   }
   if (!evidence.rows.length) emptyRow(evidence, 4, "No rule evidence is available for this capture.");
 
@@ -334,20 +399,28 @@ form.addEventListener("submit", async (event) => {
     status.focus();
     return;
   }
+  const configFile = configurationInput.files[0];
+  if (configFile && configFile.size > 16 * 1024) {
+    setStatus("The sanitized configuration JSON must be 16 KiB or smaller.", "error");
+    status.focus();
+    return;
+  }
   button.disabled = true;
   setStatus("Analyzing " + file.name + "…", "loading");
   try {
+    const formData = configFile ? new FormData() : null;
+    if (formData) {
+      formData.append("capture", file);
+      formData.append("configuration", configFile);
+    }
     const response = await fetch("/api/analyses", {
       method: "POST",
-      headers: {"Content-Type": "application/octet-stream"},
-      body: file
+      headers: formData ? {} : {"Content-Type": "application/octet-stream"},
+      body: formData || file
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(typeof payload.detail === "string" ? payload.detail : "The capture could not be analyzed.");
-    render(payload.result, payload.id);
-    history.replaceState(null, "", "/?analysis=" + encodeURIComponent(payload.id));
-    setStatus("Analysis complete. Results describe the evidence visible in this capture.", "success");
-    document.getElementById("findings-title").focus();
+    location.assign(`/analyses/${payload.id}/assessment`);
   } catch (error) {
     setStatus((error.message || "Analysis failed.") + " Choose another capture or try again.", "error", true);
     status.focus();
@@ -356,14 +429,25 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-const savedId = new URLSearchParams(location.search).get("analysis");
+const pathMatch = location.pathname.match(/^\/analyses\/([a-f0-9]{32})\/([a-z]+)$/);
+const savedId = pathMatch?.[1] || new URLSearchParams(location.search).get("analysis");
 if (savedId && /^[a-f0-9]{32}$/.test(savedId)) {
+  if (!pathMatch) history.replaceState(null, "", `/analyses/${savedId}/assessment`);
   setStatus("Loading saved analysis…", "loading");
   fetch("/api/analyses/" + savedId).then(async (response) => {
     if (!response.ok) throw new Error("Analysis expired or unavailable. Upload the capture again.");
     render(await response.json(), savedId);
     setStatus("Analysis loaded from this local session.", "success");
-    document.getElementById("findings-title").focus();
+    const view = location.pathname.split("/").at(-1);
+    const target = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+    if (target) {
+      target.focus();
+      target.scrollIntoView({block: "center"});
+    } else {
+      const heading = document.getElementById(views[view] || views.assessment);
+      heading.tabIndex = -1;
+      heading.focus();
+    }
   }).catch((error) => {
     results.hidden = true;
     emptyGuide.hidden = false;

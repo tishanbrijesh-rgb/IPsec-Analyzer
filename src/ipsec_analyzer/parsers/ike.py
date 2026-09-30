@@ -89,6 +89,10 @@ def extract_ike_body(frame: bytes, event: PacketEvent) -> bytes | None:
             offset += 4
     elif event.link_type == 101:
         offset = 0
+    elif event.link_type == 113:
+        offset = 16
+    elif event.link_type == 276:
+        offset = 20
     else:
         return None
     if event.ip_version == 4:

@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "label": "unprotected-icmp-control",
+  "label_source": "isolated lab command; no VPN daemon started",
+  "capture_point": "outer client interface",
+  "capture_sha256": "02f02a863fcd81e8bd96039f36cee491f6a723a16d03d88fb8710c440e3173b0",
+  "capture_format": "pcap",
+  "packet_count": 6,
+  "traffic_directions": 2,
+  "dataset_role": "negative control; excluded from IPsec training index"
+}

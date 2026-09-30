@@ -1,5 +1,22 @@
 # Controlled testbed status
 
+The [Phase 4 coverage matrix](../docs/design/PHASE4_COVERAGE_MATRIX.md) records each requested configuration and traffic family, its evidence, and remaining gaps.
+
+## Separate normal-communication control
+
+On the isolated Linux lab host, with no Phase 4 namespaces already running,
+run `sudo bash testbed/scripts/run_control.sh plain-icmp-01`. This starts only
+the namespace topology, captures three unprotected ICMP exchanges on the
+outer client link, and tears the topology down. It does not start strongSwan.
+The generated `testbed/generated/plain-icmp-01/control.pcap` and
+`control_record.json` remain ignored until reviewed. The 30 September WSL2
+run was reviewed and published separately under `data/control/`. The validator requires
+both outer-peer directions and rejects IKE, ESP, AH, other protocols, wrong
+endpoints, empty captures and capture diagnostics. It records the PCAP hash
+and explicitly excludes this negative control from the IPsec training index.
+If the run fails, inspect `ping.log` and `tcpdump.log` in that run directory;
+use a new run ID for a retry.
+
 `scripts/generate_scenario.py` prepares strongSwan peer configurations and a
 secret-free ground-truth manifest. Supported scenarios are modern IPv4 tunnel,
 modern IPv4 transport, modern IPv6 tunnel, forced UDP encapsulation, and CBC

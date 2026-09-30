@@ -27,6 +27,9 @@
             <input id="capture-file" type="file" accept=".pcap,.pcapng,application/octet-stream" aria-describedby="capture-guidance selected-file" required>
             <button id="analyze-button" class="primary-button" type="submit">Analyze capture</button>
           </form>
+          <label class="config-choice" for="configuration-file">Optional authorized configuration JSON <span id="configuration-name">Choose file</span></label>
+          <input id="configuration-file" type="file" form="upload-form" accept=".json,application/json" aria-describedby="configuration-guidance">
+          <p id="configuration-guidance" class="capture-guidance">Sanitized snapshot only · 16 KiB maximum · settings are labeled CONFIGURED</p>
           <p id="capture-guidance" class="capture-guidance">PCAP or PCAPNG · 16 MiB maximum · analyzed by the local service</p>
           <p id="selected-file" class="selected-file" hidden></p>
         </div>
@@ -52,35 +55,40 @@
           <div class="metric"><span class="metric-label">IKE sessions</span><strong id="metric-sessions">Pending</strong></div>
           <div class="metric"><span class="metric-label">ESP / AH flows</span><strong id="metric-flows">Pending</strong></div>
           <div class="metric"><span class="metric-label">Rule findings</span><strong id="metric-findings">Pending</strong></div>
-          <div class="metric metric-score"><span class="metric-label">Security score</span><strong id="metric-score">Unavailable</strong><span class="metric-note">Coverage too limited</span></div>
+          <div class="metric metric-score"><span class="metric-label">Risk score</span><strong id="metric-score">Withheld</strong><span id="metric-score-note" class="metric-note">Evidence gate pending</span></div>
         </div>
 
-        <nav class="result-nav" aria-label="Analysis sections"><a href="#findings-title">Assessment</a><a href="#sessions-title">IKE sessions</a><a href="#flows-title">Flows</a><a href="#inference-title">Inference</a><a href="#evidence-title">Evidence</a><a href="#packets-title">Packets</a></nav>
+        <nav class="result-nav" aria-label="Analysis pages"><a data-page-link="assessment" href="#">Assessment</a><a data-page-link="threats" href="#">Threat matrix</a><a data-page-link="sessions" href="#">IKE sessions</a><a data-page-link="flows" href="#">Flows</a><a data-page-link="inference" href="#">Inference</a><a data-page-link="evidence" href="#">Evidence</a><a data-page-link="packets" href="#">Packets</a><a data-page-link="reports" href="#">Reports</a><a href="/">New capture</a></nav>
 
         <div class="content-grid">
           <div class="main-column">
-            <section class="panel" aria-labelledby="findings-title">
+            <section class="panel" data-page="assessment" aria-labelledby="findings-title">
               <div class="section-heading"><div><p class="eyebrow">ASSESSMENT</p><h2 id="findings-title" tabindex="-1">Rule evaluations</h2></div><div class="assessment-tools"><label for="rule-filter">Show</label><select id="rule-filter" aria-controls="findings-body"><option value="all">All statuses</option><option value="FAIL">Failed</option><option value="UNKNOWN">Unknown</option><option value="PASS">Passed</option><option value="NOT_APPLICABLE">Not applicable</option></select><span id="finding-count" class="count-label"></span></div></div>
               <div class="table-wrap"><table><thead><tr><th>Rule</th><th>Status</th><th>Packets</th><th>Assessment and trace</th></tr></thead><tbody id="findings-body"></tbody></table></div>
             </section>
-            <section class="panel" aria-labelledby="sessions-title">
+            <section class="panel" data-page="threats" aria-labelledby="threat-title">
+              <div class="section-heading"><div><p class="eyebrow">FAILED CONTROLS</p><h2 id="threat-title">Threat matrix</h2></div></div>
+              <p class="panel-note">Rows come from failed, evidence-linked rules. Unknown controls remain unassessed.</p>
+              <div class="table-wrap"><table><thead><tr><th>Category</th><th>Severity</th><th>Asset</th><th>Control</th><th>Impact and action</th></tr></thead><tbody id="threat-body"></tbody></table></div>
+            </section>
+            <section class="panel" data-page="sessions" aria-labelledby="sessions-title">
               <div class="section-heading"><div><p class="eyebrow">CONTROL PLANE</p><h2 id="sessions-title">IKE sessions</h2></div></div>
               <div class="table-wrap"><table><thead><tr><th>Initiator SPI</th><th>Version</th><th>Requests</th><th>Responses</th><th>Selected proposal</th></tr></thead><tbody id="sessions-body"></tbody></table></div>
             </section>
-            <section class="panel" aria-labelledby="flows-title">
+            <section class="panel" data-page="flows" aria-labelledby="flows-title">
               <div class="section-heading"><div><p class="eyebrow">DATA PLANE</p><h2 id="flows-title">Directional flows</h2></div></div>
               <div class="table-wrap"><table><thead><tr><th>Direction</th><th>Type</th><th>Encapsulation</th><th>SPI</th><th>Packets</th><th>Captured frame bytes</th></tr></thead><tbody id="flows-body"></tbody></table></div>
             </section>
-            <section class="panel" aria-labelledby="inference-title">
+            <section class="panel" data-page="inference" aria-labelledby="inference-title">
               <div class="section-heading"><div><p class="eyebrow">MODEL OUTPUT</p><h2 id="inference-title">Encrypted traffic estimates</h2></div></div>
               <p class="panel-note">These are INFERRED synthetic profile estimates, not observed application protocols. Unknown means the model abstained.</p>
-              <div class="table-wrap"><table><thead><tr><th>Flow</th><th>Estimate / abstention reason</th><th>Model / pilot confidence</th><th>Packet evidence</th></tr></thead><tbody id="inference-body"></tbody></table></div>
+              <div class="table-wrap"><table><thead><tr><th>Flow</th><th>Estimate / abstention reason</th><th>Model / pilot score</th><th>Packet evidence</th></tr></thead><tbody id="inference-body"></tbody></table></div>
             </section>
-            <section class="panel" aria-labelledby="evidence-title">
+            <section class="panel" data-page="evidence" aria-labelledby="evidence-title">
               <div class="section-heading"><div><p class="eyebrow">PROVENANCE</p><h2 id="evidence-title">Rule evidence</h2></div></div>
               <div class="table-wrap"><table><thead><tr><th>Evidence ID</th><th>State</th><th>Value or reason</th><th>Packets</th></tr></thead><tbody id="evidence-body"></tbody></table></div>
             </section>
-            <section class="panel" aria-labelledby="packets-title">
+            <section class="panel" data-page="packets" aria-labelledby="packets-title">
               <div class="section-heading"><div><p class="eyebrow">PACKET REFERENCES</p><h2 id="packets-title">Referenced packets</h2></div></div>
               <p class="panel-note">Metadata for packets cited by rule evaluations or a selected IKE response. Frame bytes and payloads are not shown.</p>
               <div class="table-wrap"><table><thead><tr><th>Packet</th><th>Kind</th><th>Source → destination</th><th>Captured length</th><th>Notes</th></tr></thead><tbody id="packets-body"></tbody></table></div>
@@ -88,9 +96,11 @@
             </section>
           </div>
           <aside class="side-column">
-            <section class="panel side-panel" aria-labelledby="scope-title">
+            <section class="panel side-panel" data-page="assessment" aria-labelledby="scope-title">
               <p class="eyebrow">EVIDENCE BOUNDARY</p><h2 id="scope-title">Assessment scope</h2>
-              <p class="side-copy">Rules evaluate visible IKE evidence. The model estimates synthetic traffic profiles separately and does not establish hidden VPN settings.</p>
+              <p class="side-copy">Rules evaluate visible IKE evidence and matched authorized configuration. Configured settings do not prove installed Child SA state.</p>
+              <div class="coverage-line"><span>Configuration match</span><strong id="config-status">Unknown</strong></div>
+              <p id="config-reason" class="small-note"></p>
               <div class="coverage-line"><span>Rules implemented</span><strong id="implemented-rules">1</strong></div>
               <div class="coverage-line"><span>Session rule coverage</span><strong id="rule-coverage">Pending</strong></div>
               <p id="rule-coverage-detail" class="small-note"></p>
@@ -98,7 +108,7 @@
               <div class="coverage-line"><span>AI traffic inference</span><strong id="ai-status">Unknown</strong></div>
               <p id="ai-reason" class="small-note"></p>
             </section>
-            <section class="panel side-panel" aria-labelledby="capture-title">
+            <section class="panel side-panel" data-page="reports" aria-labelledby="capture-title">
               <p class="eyebrow">CAPTURE</p><h2 id="capture-title">Source details</h2>
               <dl class="source-details"><dt>Format</dt><dd id="source-format">Pending</dd><dt>SHA-256</dt><dd id="source-hash" class="hash">Pending</dd></dl>
               <div id="report-actions" class="report-actions" hidden>
@@ -106,7 +116,7 @@
                 <div class="report-group"><h3>Shared copy</h3><p>Redacts capture identifiers, endpoints and SPI values.</p><div class="report-links"><a id="redacted-link" href="#">PDF</a><a id="redacted-json-link" href="#">JSON</a></div></div>
               </div>
             </section>
-            <section class="panel side-panel" aria-labelledby="limits-title">
+            <section class="panel side-panel" data-page="assessment" aria-labelledby="limits-title">
               <p class="eyebrow">INTERPRETATION</p><h2 id="limits-title">Known limits</h2><ul id="limitations" class="limitations"></ul>
             </section>
           </aside>

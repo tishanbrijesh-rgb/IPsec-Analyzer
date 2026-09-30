@@ -1,5 +1,6 @@
 import asyncio
 import json
+from pathlib import Path
 
 from ipsec_analyzer.api.app import app
 import ipsec_analyzer.api.app as api_module
@@ -50,6 +51,102 @@ def test_upload_and_get(tmp_path):
     status, body = request("GET", "/api/analyses/" + payload["id"])
     assert status == 200
     assert json.loads(body)["capture"]["sha256"]
+
+
+def test_inference_score_scope_matches_api_and_report():
+    capture = Path(__file__).resolve().parents[1] / "data/sample/phase4-voip-01.pcap"
+    status, body = request("POST", "/api/analyses", capture.read_bytes(),
+                           {"content-type": "application/octet-stream"})
+    assert status == 201
+    created = json.loads(body)
+    flows = created["result"]["ai_inference"]["flows"]
+    assert any(item["state"] == "INFERRED" and item["confidence"] is not None for item in flows)
+    assert all(item["confidence"] is None for item in flows if item["abstained"])
+    base = f"/api/analyses/{created['id']}"
+    status, body = request("GET", base + "/report?format=json")
+    assert status == 200
+    assert json.loads(body)["ai_inference"]["flows"] == flows
+    status, body = request("GET", base + "/report?format=text")
+    assert status == 200
+    assert b"pilot model score" in body
+    assert b"probability unvalidated" in body
+
+
+def test_multipart_configuration_produces_same_scored_report(tmp_path):
+    from tests.test_configuration import selected_capture, snapshot
+
+    path = selected_capture(tmp_path)
+    config = json.dumps(snapshot(path, values={
+        "deployment_type": "site_to_site", "mode": "tunnel",
+        "child_sa_lifetime_seconds": 3600, "replay_window": 64, "pfs_group": 20,
+    })).encode()
+    boundary = b"sih-config-test"
+    body = (b"--" + boundary + b"\r\nContent-Disposition: form-data; name=\"capture\"; filename=\"capture.pcap\"\r\n"
+            b"Content-Type: application/octet-stream\r\n\r\n" + path.read_bytes() + b"\r\n"
+            b"--" + boundary + b"\r\nContent-Disposition: form-data; name=\"configuration\"; filename=\"config.json\"\r\n"
+            b"Content-Type: application/json\r\n\r\n" + config + b"\r\n--" + boundary + b"--\r\n")
+    status, response = request("POST", "/api/analyses", body,
+                               {"content-type": "multipart/form-data; boundary=sih-config-test"})
+    assert status == 201
+    payload = json.loads(response)
+    assert payload["result"]["risk_score"]["status"] == "SCORED"
+    status, response = request("GET", f"/api/analyses/{payload['id']}/report?format=json")
+    assert status == 200
+    report = json.loads(response)
+    assert report["risk_score"] == payload["result"]["risk_score"]
+    for view in ("assessment", "threats", "sessions", "flows", "inference", "evidence", "packets", "reports"):
+        status, page = request("GET", f"/analyses/{payload['id']}/{view}")
+        assert status == 200
+        assert b'data-page-link="reports"' in page
+
+
+def test_weak_assessment_agrees_across_api_and_all_exports(tmp_path):
+    from tests.test_configuration import selected_capture, snapshot
+
+    path = selected_capture(tmp_path, weak=True)
+    config = json.dumps(snapshot(path, values={
+        "deployment_type": "site_to_site", "mode": "transport",
+        "child_sa_lifetime_seconds": 172800, "replay_window": 0, "pfs_group": 0,
+    })).encode()
+    boundary = b"phase6-review"
+    body = (b"--" + boundary + b"\r\nContent-Disposition: form-data; name=\"capture\"; filename=\"weak.pcap\"\r\n"
+            b"Content-Type: application/octet-stream\r\n\r\n" + path.read_bytes() + b"\r\n"
+            b"--" + boundary + b"\r\nContent-Disposition: form-data; name=\"configuration\"; filename=\"config.json\"\r\n"
+            b"Content-Type: application/json\r\n\r\n" + config + b"\r\n--" + boundary + b"--\r\n")
+    status, response = request("POST", "/api/analyses", body,
+                               {"content-type": "multipart/form-data; boundary=phase6-review"})
+    assert status == 201
+    created = json.loads(response)
+    result = created["result"]
+    assert result["risk_score"]["value"] == 50.0
+    assert len(result["threat_matrix"]) == result["finding_count"] == 5
+    base = f"/api/analyses/{created['id']}"
+    for route, key in (("/sessions", "sessions"), ("/flows", "flows"),
+                       ("/findings", "findings"), ("/evidence", "evidence")):
+        status, response = request("GET", base + route)
+        assert status == 200
+        assert json.loads(response) == json.loads(json.dumps(result[key]))
+    status, response = request("GET", base + "/report?format=json")
+    assert status == 200
+    exported = json.loads(response)
+    for key in ("risk_score", "threat_matrix", "ai_inference", "rule_evaluations", "findings"):
+        assert exported[key] == result[key]
+    assert exported["summary"]["score_status"] == "SCORED"
+    for format in ("text", "html", "pdf"):
+        status, response = request("GET", base + f"/report?format={format}")
+        assert status == 200
+        assert b"50.0/100" in response
+        assert b"sih-threat-1" in response
+        assert b"Receiving IPsec gateway" in response
+        if format != "pdf":
+            assert b"50.0/100 (HIGH)" in response
+            assert b"INFERRED synthetic-profile" in response
+    status, response = request("GET", base + "/report?format=json&redacted=true")
+    assert status == 200
+    shared = json.loads(response)
+    assert shared["capture"]["sha256"] == "[redacted]"
+    assert shared["risk_score"]["status"] == "SCORED"
+    assert len(shared["threat_matrix"]) == 5
 
 
 def test_result_eviction_and_restart_lifecycle(tmp_path, monkeypatch):

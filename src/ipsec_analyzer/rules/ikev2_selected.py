@@ -19,6 +19,11 @@ def evaluate_selected_transform(session: Session, transform_type: int) -> RuleRe
         baseline, url = "RFC 8247 section 2.4", "https://www.rfc-editor.org/rfc/rfc8247.html#section-2.4"
         impact = "Group 1 does not provide a meaningful key exchange security margin."
         remediation = "Remove MODP group 1 from IKEv2 proposals and select a supported stronger group."
+    elif transform_type == 2:
+        rule_id, weak_id, label = "IPSEC-IKEV2-PRF-MD5-001", 1, "PRF_HMAC_MD5"
+        baseline, url = "RFC 8247 section 2.2", "https://www.rfc-editor.org/rfc/rfc8247.html#section-2.2"
+        impact = "The selected IKE SA uses a deprecated MD5-based pseudorandom function."
+        remediation = "Remove PRF_HMAC_MD5 from IKEv2 proposals and select a supported SHA-2 PRF."
     else:
         raise ValueError("Unsupported transform rule")
 

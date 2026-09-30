@@ -50,7 +50,8 @@ def test_synthetic_profile_capture(name: str, sha256: str, packet_count: int):
     assert len(data["sessions"]) == 1
     assert len(data["flows"]) == 2
     assert all(flow["kind"] == "ESP" for flow in data["flows"])
-    assert all(item["status"] == "PASS" for item in data["rule_evaluations"])
+    assert all(item["status"] == "PASS" for item in data["rule_evaluations"] if not item["rule_id"].startswith("IPSEC-CONFIG-"))
+    assert all(item["status"] == "UNKNOWN" for item in data["rule_evaluations"] if item["rule_id"].startswith("IPSEC-CONFIG-"))
 
 
 @pytest.mark.parametrize("name,sha256,dh_group", [

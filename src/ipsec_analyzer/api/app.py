@@ -8,12 +8,14 @@ from __future__ import annotations
 
 import tempfile
 import ipaddress
+import json
 from collections import OrderedDict
 from pathlib import Path
 from typing import Literal
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
+from starlette.datastructures import UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -65,22 +67,43 @@ def health():
 @app.post("/api/analyses", status_code=201)
 async def create_analysis(request: Request):
     content_type = request.headers.get("content-type", "").split(";")[0].strip()
-    if content_type not in ("application/octet-stream", "application/vnd.tcpdump.pcap"):
-        raise HTTPException(415, "Send raw PCAP or PCAPNG bytes as application/octet-stream")
+    if content_type not in ("application/octet-stream", "application/vnd.tcpdump.pcap", "multipart/form-data"):
+        raise HTTPException(415, "Send raw PCAP bytes or multipart capture and sanitized configuration files")
     size = 0
+    configuration = None
     with tempfile.TemporaryDirectory(prefix="ipsec-analysis-") as directory:
         capture_path = Path(directory) / "capture"
-        with capture_path.open("wb") as temporary:
-            async for chunk in request.stream():
-                size += len(chunk)
-                if size > MAX_UPLOAD_BYTES:
-                    raise HTTPException(413, "Capture exceeds 16 MiB local API limit")
-                temporary.write(chunk)
+        if content_type == "multipart/form-data":
+            async with request.form(max_files=2, max_fields=0) as form:
+                capture_file = form.get("capture")
+                config_file = form.get("configuration")
+                if len(form) != 2 or not isinstance(capture_file, UploadFile) or not isinstance(config_file, UploadFile):
+                    raise HTTPException(400, "Provide capture and configuration files exactly once")
+                raw_config = await config_file.read(16 * 1024 + 1)
+                if len(raw_config) > 16 * 1024:
+                    raise HTTPException(413, "Configuration exceeds 16 KiB limit")
+                try:
+                    configuration = json.loads(raw_config)
+                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                    raise HTTPException(422, "Configuration must be valid JSON") from exc
+                with capture_path.open("wb") as temporary:
+                    while chunk := await capture_file.read(1024 * 1024):
+                        size += len(chunk)
+                        if size > MAX_UPLOAD_BYTES:
+                            raise HTTPException(413, "Capture exceeds 16 MiB local API limit")
+                        temporary.write(chunk)
+        else:
+            with capture_path.open("wb") as temporary:
+                async for chunk in request.stream():
+                    size += len(chunk)
+                    if size > MAX_UPLOAD_BYTES:
+                        raise HTTPException(413, "Capture exceeds 16 MiB local API limit")
+                    temporary.write(chunk)
         if size == 0:
             raise HTTPException(400, "Capture is empty")
         try:
-            analysis = analyze_capture(capture_path)
-        except CaptureError as exc:
+            analysis = analyze_capture(capture_path, configuration)
+        except (CaptureError, ValueError) as exc:
             raise HTTPException(422, str(exc)) from exc
     analysis_id = uuid4().hex
     _results[analysis_id] = analysis.to_dict()
@@ -155,6 +178,12 @@ if WEB_DIR.is_dir():
 
     @app.get("/", response_class=HTMLResponse)
     def index():
+        return (WEB_DIR / "index.html").read_text(encoding="utf-8")
+
+    @app.get("/analyses/{analysis_id}/{view}", response_class=HTMLResponse)
+    def analysis_page(analysis_id: str, view: Literal["assessment", "threats", "sessions", "flows",
+                                                  "inference", "evidence", "packets", "reports"]):
+        _lookup(analysis_id)
         return (WEB_DIR / "index.html").read_text(encoding="utf-8")
 
     @app.get("/privacy", response_class=HTMLResponse)

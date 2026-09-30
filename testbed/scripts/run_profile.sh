@@ -60,7 +60,10 @@ if [[ "$live_check" == --live-check ]]; then
 fi
 bash testbed/scripts/topology.sh up >/dev/null
 topology_up=1
-bash testbed/scripts/peers.sh start "$run_dir" > "$run_dir/start.log" 2>&1
+if ! bash testbed/scripts/peers.sh start "$run_dir" > "$run_dir/start.log" 2>&1; then
+  tail -n 30 "$run_dir/start.log" >&2
+  exit 1
+fi
 capture_filter='ip and (udp port 500 or udp port 4500 or proto 50 or proto 51)'
 if [[ "$scenario" == modern-v6-tunnel ]]; then
   capture_filter='ip6 and (udp port 500 or udp port 4500 or proto 50 or proto 51)'

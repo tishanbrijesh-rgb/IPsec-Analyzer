@@ -17,6 +17,27 @@ protected ESP packets, not byte-identical PCAPs.
 - Use unique run IDs; generated peer configs contain fresh PSKs and are
   confined to ignored `testbed/generated/`.
 
+### Ubuntu AppArmor access to lab VICI sockets
+
+Some Ubuntu installations confine `/usr/sbin/swanctl` to the default VICI
+socket. If the kernel log reports `apparmor="DENIED"` for a connection to
+`/run/sih4-client/charon.vici` or `/run/sih4-server/charon.vici`, first confirm
+that `/etc/apparmor.d/usr.sbin.swanctl` includes
+`local/usr.sbin.swanctl`. Then add only these two lab paths to that local
+include and reload the `swanctl` profile:
+
+```sh
+sudo grep -n 'local/usr.sbin.swanctl' /etc/apparmor.d/usr.sbin.swanctl
+printf '%s\n' '/run/sih4-client/charon.vici rw,' '/run/sih4-server/charon.vici rw,' | sudo tee -a /etc/apparmor.d/local/usr.sbin.swanctl
+sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.swanctl
+```
+
+Stop if the include is absent or the reload fails; inspect the installed
+profile before retrying. This changes only the `swanctl` profile on the lab
+host and leaves AppArmor enforcement enabled. Use new run IDs after a failed
+run. The generated config directories are root-owned and should not be
+published.
+
 ## Strong and contrasting configuration
 
 Run each command separately, waiting for it to finish:

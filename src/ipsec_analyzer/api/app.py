@@ -229,7 +229,9 @@ if WEB_DIR.is_dir():
         _lookup(analysis_id)
         html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
         if PUBLIC_DEMO:
+            html = html.replace("<body>", '<body class="public-demo">', 1)
             html = html.replace("LOCAL WORKSPACE", "PUBLIC LAB DEMO")
+            html = html.replace("New capture</a>", "All lab cases</a>")
         return html
 
     @app.get("/privacy", response_class=HTMLResponse)

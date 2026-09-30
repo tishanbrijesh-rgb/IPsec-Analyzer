@@ -61,6 +61,8 @@ def test_public_demo_is_read_only_and_serves_reviewed_captures(monkeypatch):
                            client="203.0.113.6")
     assert status == 200
     assert b"PUBLIC LAB DEMO" in page
+    assert b'<body class="public-demo">' in page
+    assert b"All lab cases</a>" in page
 
 
 def test_upload_and_get(tmp_path):

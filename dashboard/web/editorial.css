@@ -220,3 +220,4 @@ td details summary { min-height: 44px; display: inline-flex; align-items: center
 @media (prefers-reduced-motion: reduce) {
   .view-intro, .metric, .result-nav a { animation: none; transition: none; }
 }
+body.public-demo .capture-control { display: none; }

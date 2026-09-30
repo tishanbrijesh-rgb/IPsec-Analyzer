@@ -49,3 +49,43 @@ def evaluate_selected_transform(session: Session, transform_type: int) -> RuleRe
     return RuleResult(rule_id, RULE_VERSION, "PASS", None, subject, packet,
                       f"The selected IKEv2 transform is not {label}; this narrow rule passes.",
                       None, baseline, url, "OBSERVED")
+
+
+def evaluate_selected_integrity(session: Session) -> RuleResult:
+    """Check selected IKE integrity without treating absent AEAD integrity as a pass."""
+    rule_id = "IPSEC-IKEV2-INTEG-MD5-001"
+    baseline = "RFC 8247 section 2.3"
+    url = "https://www.rfc-editor.org/rfc/rfc8247.html#section-2.3"
+    subject = session.initiator_spi
+    if session.version_major != 2:
+        return RuleResult(rule_id, RULE_VERSION, "NOT_APPLICABLE", None, subject, (),
+                          "This rule applies only to IKEv2.", None, baseline, url, "UNKNOWN")
+    if session.selected is None or session.selected_evidence_packet is None or session.association_state != "UNAMBIGUOUS":
+        return RuleResult(rule_id, RULE_VERSION, "UNKNOWN", None, subject, (),
+                          "No unambiguous selected IKEv2 SA response is visible.", None,
+                          baseline, url, "UNKNOWN")
+    packet = (session.selected_evidence_packet,)
+    integrity = [item for item in session.selected.transforms if item.transform_type == 3]
+    if not integrity:
+        encryption = [item for item in session.selected.transforms if item.transform_type == 1]
+        if len(encryption) == 1 and encryption[0].transform_id in (18, 19, 20):
+            return RuleResult(rule_id, RULE_VERSION, "NOT_APPLICABLE", None, subject, packet,
+                              "The selected IKE SA uses AES-GCM authenticated encryption, so a separate integrity transform is not used.",
+                              None, baseline, url, "OBSERVED")
+        return RuleResult(rule_id, RULE_VERSION, "UNKNOWN", None, subject, packet,
+                          "No selected integrity transform is visible; this rule does not grade an AEAD-only proposal.",
+                          None, baseline, url, "UNKNOWN")
+    if len(integrity) != 1:
+        return RuleResult(rule_id, RULE_VERSION, "UNKNOWN", None, subject, packet,
+                          "The selected response does not contain exactly one integrity transform.",
+                          None, baseline, url, "UNKNOWN")
+    if integrity[0].transform_id == 1:
+        return RuleResult(rule_id, RULE_VERSION, "FAIL", "HIGH", subject, packet,
+                          "Selected IKEv2 response uses AUTH_HMAC_MD5_96; RFC 8247 marks it MUST NOT.",
+                          "Remove AUTH_HMAC_MD5_96 from IKEv2 proposals and select a supported integrity transform.",
+                          baseline, url, "OBSERVED",
+                          "Project policy: an RFC MUST NOT transform in a selected response is high severity.",
+                          "The IKE SA uses a deprecated MD5-based integrity transform.")
+    return RuleResult(rule_id, RULE_VERSION, "PASS", None, subject, packet,
+                      "The selected IKEv2 integrity transform is not AUTH_HMAC_MD5_96; this narrow rule passes.",
+                      None, baseline, url, "OBSERVED")

@@ -48,14 +48,14 @@ supported. The [phase status](IMPLEMENTATION_STATUS.md) owns detailed evidence.
 | Tunnel/transport mode and ESP Child SA algorithms | Partial: matched configuration and selected IKE transforms are distinguishable; passive encrypted settings remain unknown | Reviewed installed-SA state or other authorized evidence; never infer ESP cipher or mode from IKE selection alone |
 | Authentication and key exchange | Partial: visible proposal/transform IDs and selected IKE DH are parsed; comprehensive strength assessment is absent | Versioned reviewed authentication, DH and cipher-suite rules with exact evidence boundaries |
 | Traffic type inside ESP and AI confidence | Partial: versioned synthetic pilot, held-out metrics and abstention | Independent complete runs and authorized real-app challenge; assess calibration with meaningful denominators |
-| Cryptography, compliance, SA parameters, lifetime, replay, PFS, metadata exposure | Partial: four packet rules and four configured-control rules, with coverage-gated risk | Broader reviewed rules and installed-state verification; explicit metadata-exposure findings where packet evidence supports them |
+| Cryptography, compliance, SA parameters, lifetime, replay, PFS, metadata exposure | Partial: five packet rules and four configured-control rules, with coverage-gated risk | Broader reviewed rules and installed-state verification; explicit metadata-exposure findings where packet evidence supports them |
 | Risk score, threat matrix, executive and technical reports | Verified for bounded project policy across local API, separate dashboard pages and exports | Independent policy review and broader control coverage before calling the score comprehensive |
 | Working prototype, dashboard, docs and training/testing dataset | Verified local prototype and synthetic dataset with run-level splits | Package a frozen requirement-to-evidence index for submission |
 | Demonstration video | Missing | Execute the written strong/weak, offline/live, inference/abstention and export sequence, then record and verify the video |
 
 ## Verified prototype baseline
 
-- Offline parsing and correlation work within their documented scope. Three
+- Offline parsing and correlation work within their documented scope. Five
   packet rules and four matched-configuration rules now feed a versioned,
   coverage-gated project risk score and evidence-linked threat matrix. Passive
   captures cannot reveal every Child SA setting, and configured intent does
@@ -101,7 +101,7 @@ supported. The [phase status](IMPLEMENTATION_STATUS.md) owns detailed evidence.
 | --- | --- | --- | --- |
 | P0 | Configuration-aware assessment — bounded v1 implemented | Authorized config input with provenance; mode, lifetime, replay and PFS checks | Capture-only results stay unknown; config-backed checks cite source and have positive, negative and partial-evidence tests; independent policy review remains |
 | P0 | Risk score and threat matrix — bounded v1 implemented | Versioned formula, per-session coverage gate, risk bands and evidence-linked threat categories | Score is shown only with sufficient evidence; JSON, dashboard and both reports agree; installed-state verification remains |
-| P0 | Assessment breadth required by SIH | Reviewed authentication, SA-parameter, cipher-suite and metadata-exposure rules where evidence supports them | Weak/strong/partial tests and policy review; unsupported encrypted or installed settings stay unknown |
+| P0 | Assessment breadth required by SIH | Reviewed authentication, SA-parameter, cipher-suite and metadata-exposure rules where evidence supports them; selected IKE integrity MD5 rule added locally | Weak/strong/partial tests and independent policy review; unsupported encrypted or installed settings stay unknown |
 | P0 | SIH demo and submission | Strong/weak, offline/live, inference/abstention, score or withheld state, threat matrix, exports and video | Another person can follow the guide and reproduce every shown claim |
 | P1 | Evidence-backed remediation verification | Paired before/after analyses with comparable scope, finding transition and evidence links | A changed finding is verified only by positive after-evidence; otherwise the result is inconclusive |
 | P1 | Testbed and dataset coverage — local checks implemented | [Configuration matrix](PHASE4_COVERAGE_MATRIX.md), reviewed separate normal-traffic control, explicit AH gap and revised dataset card | Each SIH configuration and traffic family has a verified or explicit gap status; independent developer or physical-host reproduction remains |

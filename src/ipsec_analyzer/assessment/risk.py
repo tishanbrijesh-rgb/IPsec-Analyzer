@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-POLICY_VERSION = "sih-risk-2"
+POLICY_VERSION = "sih-risk-3"
 THREAT_VERSION = "sih-threat-1"
 MIN_WEIGHTED_COVERAGE = 0.8
 WEIGHTS = {
     "IPSEC-IKE-LEGACY-001": 3,
     "IPSEC-IKEV2-DES-001": 3,
     "IPSEC-IKEV2-PRF-MD5-001": 3,
+    "IPSEC-IKEV2-INTEG-MD5-001": 3,
     "IPSEC-IKEV2-MODP1-001": 3,
     "IPSEC-CONFIG-MODE-001": 1,
     "IPSEC-CONFIG-LIFETIME-001": 1,
@@ -21,6 +22,7 @@ THREATS = {
     "IPSEC-IKE-LEGACY-001": ("Legacy key exchange", "IKE protocol version", "IKE SA"),
     "IPSEC-IKEV2-DES-001": ("Weak confidentiality", "Selected IKE encryption", "IKE SA"),
     "IPSEC-IKEV2-PRF-MD5-001": ("Weak key derivation", "Selected IKE PRF", "IKE SA"),
+    "IPSEC-IKEV2-INTEG-MD5-001": ("Weak authentication", "Selected IKE integrity", "IKE SA"),
     "IPSEC-IKEV2-MODP1-001": ("Weak key exchange", "Selected IKE DH group", "IKE SA"),
     "IPSEC-CONFIG-MODE-001": ("Policy scope", "Configured Child SA mode", "Protected traffic"),
     "IPSEC-CONFIG-LIFETIME-001": ("Key exposure duration", "Configured Child SA lifetime", "Child SA"),

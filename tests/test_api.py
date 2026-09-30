@@ -118,7 +118,7 @@ def test_weak_assessment_agrees_across_api_and_all_exports(tmp_path):
     assert status == 201
     created = json.loads(response)
     result = created["result"]
-    assert result["risk_score"]["value"] == 50.0
+    assert result["risk_score"]["value"] == 42.86
     assert len(result["threat_matrix"]) == result["finding_count"] == 5
     base = f"/api/analyses/{created['id']}"
     for route, key in (("/sessions", "sessions"), ("/flows", "flows"),
@@ -135,11 +135,11 @@ def test_weak_assessment_agrees_across_api_and_all_exports(tmp_path):
     for format in ("text", "html", "pdf"):
         status, response = request("GET", base + f"/report?format={format}")
         assert status == 200
-        assert b"50.0/100" in response
+        assert b"42.86/100" in response
         assert b"sih-threat-1" in response
         assert b"Receiving IPsec gateway" in response
         if format != "pdf":
-            assert b"50.0/100 (HIGH)" in response
+            assert b"42.86/100 (MODERATE)" in response
             assert b"INFERRED synthetic-profile" in response
     status, response = request("GET", base + "/report?format=json&redacted=true")
     assert status == 200
@@ -204,7 +204,8 @@ def test_upload_over_16_mib_rejected_without_retaining_raw_file(tmp_path, monkey
 def test_dashboard_and_security_headers():
     status, body = request("GET", "/")
     assert status == 200
-    assert b"Investigate a capture" in body
+    assert b"Decode the <em>unseen.</em>" in body
+    assert b'/assets/editorial.css' in body
     assert b'href="/privacy"' in body
     assert b'href="/terms"' in body
     assert b"\xe2\x80\x94" not in body

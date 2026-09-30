@@ -7,6 +7,7 @@
   <title>IPsec Analyzer | Capture Review</title>
   <link rel="stylesheet" href="/assets/styles.css">
   <link rel="stylesheet" href="/assets/theme.css">
+  <link rel="stylesheet" href="/assets/editorial.css">
   <script src="/assets/motion.bundle.js" defer></script>
   <script src="/assets/app.js" defer></script>
 </head>
@@ -20,7 +21,7 @@
 
     <main id="main-content">
       <section class="page-heading" aria-labelledby="page-title">
-        <div class="heading-copy"><p class="eyebrow">CAPTURE WORKSPACE / OFFLINE ANALYSIS</p><h1 id="page-title">Investigate a capture</h1><p class="intro">Inspect visible IKE and ESP behavior, then trace each assessment to packet evidence.</p></div>
+        <div class="heading-copy"><p class="eyebrow">IPSEC / ANALYSIS WORKSPACE / 01</p><h1 id="page-title">Decode the <em>unseen.</em></h1><p class="intro">Investigate IKE and ESP behavior. Follow every assessment back to its packet or authorized configuration evidence.</p></div>
         <div class="capture-control">
           <form id="upload-form" class="upload-form">
             <label class="file-control" for="capture-file"><span id="file-name">Select a PCAP or PCAPNG</span><span class="file-browse">Browse</span></label>
@@ -38,7 +39,7 @@
       <div id="status" class="status" role="status" aria-live="polite" tabindex="-1"><span id="status-message">Choose a local capture to begin. Raw bytes are analyzed in this session and discarded after processing.</span><button id="retry-select" type="button" hidden>Choose another capture</button></div>
       <noscript><p class="status error">JavaScript is required for browser upload and analysis. Enable it, then choose a PCAP or PCAPNG file.</p></noscript>
       <section id="empty-guide" class="empty-guide" aria-label="Analysis workflow">
-        <div class="guide-header"><span class="guide-index">INVESTIGATION PATH / 01–03</span><strong>From packets to proof.</strong><p>A local capture becomes a traceable assessment. Each conclusion stays linked to the evidence the analyzer can actually see.</p></div>
+        <div class="guide-header"><span class="guide-index">THE METHOD / 01–03</span><strong>FROM SIGNAL<br>TO <em>EVIDENCE.</em></strong><p>A local capture becomes a traceable assessment. Every conclusion stays linked to what the analyzer can actually see.</p></div>
         <div class="signal-map" aria-hidden="true"><span class="map-node map-capture">PCAP<span>01 / INPUT</span></span><span class="map-link map-link-one"></span><span class="map-node map-ike">IKE<span>02 / CONTROL</span></span><span class="map-link map-link-two"></span><span class="map-node map-esp">ESP<span>03 / DATA</span></span><span class="map-output">EVIDENCE <b>→</b> ASSESSMENT</span></div>
         <div class="guide-steps"><div><span class="guide-index">01 / CAPTURE</span><strong>Load</strong><p>Choose a local PCAP or PCAPNG. Raw bytes are discarded after analysis.</p></div><div><span class="guide-index">02 / TRACE</span><strong>Inspect</strong><p>Follow findings to rules, evidence states and packet references.</p></div><div><span class="guide-index">03 / REPORT</span><strong>Share</strong><p>Export a full report or a redacted copy for external review.</p></div></div>
       </section>

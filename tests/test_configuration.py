@@ -29,18 +29,19 @@ def capture(tmp_path):
 
 
 def selected_capture(tmp_path, weak=False):
-    def with_prf(message):
+    def with_prf_and_integrity(message):
         raw = bytearray(message)
         raw[-8] = 3
-        raw[39] = 3
-        raw[24:28] = (int.from_bytes(raw[24:28], "big") + 8).to_bytes(4, "big")
+        raw[39] = 4
+        raw[24:28] = (int.from_bytes(raw[24:28], "big") + 16).to_bytes(4, "big")
         for start in (30, 34):
-            raw[start:start + 2] = (int.from_bytes(raw[start:start + 2], "big") + 8).to_bytes(2, "big")
-        raw.extend(b"\0\0\0\x08\x02\0\0\x05")
+            raw[start:start + 2] = (int.from_bytes(raw[start:start + 2], "big") + 16).to_bytes(2, "big")
+        raw.extend(b"\x03\0\0\x08\x02\0\0\x05")
+        raw.extend(b"\0\0\0\x08\x03\0\0\x0c")
         return bytes(raw)
 
-    packets = [ipv4_packet(17, udp(500, 500, with_prf(ike_sa_message_with_dh()))),
-               ipv4_packet(17, udp(500, 500, with_prf(ike_sa_message_with_dh(True, 2 if weak else 12))))]
+    packets = [ipv4_packet(17, udp(500, 500, with_prf_and_integrity(ike_sa_message_with_dh()))),
+               ipv4_packet(17, udp(500, 500, with_prf_and_integrity(ike_sa_message_with_dh(True, 2 if weak else 12))))]
     return write_pcap(tmp_path / "selected.pcap", packets)
 
 
@@ -59,6 +60,27 @@ def test_selected_md5_prf_is_traceable_and_request_alone_is_unknown(tmp_path):
     assert finding.baseline == "RFC 8247 section 2.2"
     session.selected = Proposal(1, 1, "", (Transform(2, 5),))
     assert evaluate_selected_transform(session, 2).status == "PASS"
+
+
+def test_selected_md5_integrity_is_traceable_without_grading_aead():
+    from ipsec_analyzer.rules.ikev2_selected import evaluate_selected_integrity
+    from ipsec_analyzer.assessment.sessions import Session
+    from ipsec_analyzer.parsers.ike import Proposal, Transform
+
+    session = Session(("192.0.2.1", "198.51.100.2"), "01" * 8, "02" * 8, 2)
+    assert evaluate_selected_integrity(session).status == "UNKNOWN"
+    session.selected_evidence_packet = 9
+    session.selected = Proposal(1, 1, "", (Transform(1, 12), Transform(3, 1)))
+    finding = evaluate_selected_integrity(session)
+    assert finding.status == "FAIL"
+    assert finding.evidence_packets == (9,)
+    assert finding.baseline == "RFC 8247 section 2.3"
+    session.selected = Proposal(1, 1, "", (Transform(1, 12), Transform(3, 12)))
+    assert evaluate_selected_integrity(session).status == "PASS"
+    session.selected = Proposal(1, 1, "", (Transform(1, 20),))
+    assert evaluate_selected_integrity(session).status == "NOT_APPLICABLE"
+    session.selected = Proposal(1, 1, "", (Transform(1, 12),))
+    assert evaluate_selected_integrity(session).status == "UNKNOWN"
 
 
 def test_matched_configuration_has_explicit_source_and_no_packet_claim(tmp_path):
@@ -177,12 +199,12 @@ def test_score_and_threats_agree_across_report_formats(tmp_path):
     assert document["threat_matrix"] == data["threat_matrix"]
     assert document["summary"]["score_status"] == "SCORED"
     for rendered in (report_text(analysis), report_html(analysis)):
-        assert "50.0/100 (HIGH)" in rendered
+        assert "42.86/100 (MODERATE)" in rendered
         assert "Replay exposure" in rendered
         assert "Receiving IPsec gateway" in rendered
         assert "IPSEC-CONFIG-REPLAY-001" in rendered
     pdf = report_pdf(analysis)
-    assert b"50.0/100" in pdf and b"Replay exposure" in pdf
+    assert b"42.86/100" in pdf and b"Replay exposure" in pdf
 
 
 def test_score_cannot_borrow_configured_controls_from_another_session(tmp_path):

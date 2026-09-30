@@ -28,14 +28,20 @@ only; it does not grade DH-group strength. A different rule would need a
 separate reviewed group policy. Anti-replay and PFS need installed-state or
 rekey verification before claiming operational protection.
 
-## Score `sih-risk-2`
+## Score `sih-risk-3`
 
-Version 2 adds the observed IKEv2 PRF_HMAC_MD5 rule at weight 3. Scores from
-version 1 and version 2 use different denominators and must not be compared
-without recomputation under the same version.
+Version 3 adds a selected IKEv2 AUTH_HMAC_MD5_96 integrity rule at weight 3.
+It is not applicable when the selected IKE encryption is AES-GCM, whose
+authenticated encryption uses no separate integrity transform. An absent
+integrity transform with other encryption remains unknown. Scores from
+different versions use different denominators and must be recomputed under the
+same policy before comparison. [RFC 8247 section 2.3](https://www.rfc-editor.org/rfc/rfc8247.html#section-2.3)
+marks AUTH_HMAC_MD5_96 as MUST NOT for IKEv2 implementations. This rule concerns
+the selected IKE SA, not an encrypted ESP Child SA or peer authentication method.
 
 This is a 0–100 **risk** number; higher means more weighted failed controls.
-Weights are 3 each for IKEv1, selected DES, selected PRF_HMAC_MD5 and selected MODP group 1; 1 each
+Weights are 3 each for IKEv1, selected DES, selected PRF_HMAC_MD5,
+selected AUTH_HMAC_MD5_96 and selected MODP group 1; 1 each
 for mode and lifetime; 2 each for replay and PFS. For each applicable rule,
 `PASS` or `FAIL` contributes its weight to the assessed denominator. `UNKNOWN`
 contributes to applicable weight but not assessed weight. `NOT_APPLICABLE` is

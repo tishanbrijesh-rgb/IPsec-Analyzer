@@ -483,7 +483,7 @@ caps IKE messages at 10,000 and evidence subjects at 5,000. See
 [CORRELATION_AND_EVIDENCE.md](docs/design/CORRELATION_AND_EVIDENCE.md). The
 local dashboard is at `http://127.0.0.1:8000/` and accepts captures up to
 16 MiB. It has no user authentication and must stay bound to loopback.
-The dark glass/cyber frontend serves its Motion animation bundle locally.
+The charcoal and violet editorial frontend serves its Motion animation bundle locally.
 After changing `dashboard/web/motion-src.js`, run `npm ci` and
 `npm run build:motion`; the generated bundle is served by the Python app.
 

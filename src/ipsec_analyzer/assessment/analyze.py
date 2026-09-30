@@ -14,7 +14,7 @@ from ipsec_analyzer.features.flows import build_flows
 from ipsec_analyzer.ingestion.capture import CaptureError, read_capture
 from ipsec_analyzer.parsers.ike import parse_ike
 from ipsec_analyzer.rules.ikev1 import evaluate_ike_version
-from ipsec_analyzer.rules.ikev2_selected import evaluate_selected_transform
+from ipsec_analyzer.rules.ikev2_selected import evaluate_selected_integrity, evaluate_selected_transform
 from ipsec_analyzer.rules.configured import evaluate_configuration
 from ipsec_analyzer.ml.classifier import load_model, predict
 from ipsec_analyzer.ml.contract import ModelUnavailable
@@ -85,6 +85,7 @@ def analyze_capture(path: str | Path, configuration: dict | None = None) -> Anal
         for item in (evaluate_ike_version(session),
                      evaluate_selected_transform(session, 1),
                      evaluate_selected_transform(session, 2),
+                     evaluate_selected_integrity(session),
                      evaluate_selected_transform(session, 4)):
             entry = item.to_dict()
             entry["subject_id"] = record["id"]
@@ -144,9 +145,9 @@ def analyze_capture(path: str | Path, configuration: dict | None = None) -> Anal
         "rule_evaluations": evaluations,
         "findings": findings,
         "threat_matrix": threat_matrix,
-        "rule_set_version": "configuration-2",
+        "rule_set_version": "configuration-3",
         "coverage": {
-            "implemented_rules": 8,
+            "implemented_rules": 9,
             "evaluated_session_rules": evaluated,
             "total_session_rules": applicable,
             "not_applicable_session_rules": len(evaluations) - applicable,

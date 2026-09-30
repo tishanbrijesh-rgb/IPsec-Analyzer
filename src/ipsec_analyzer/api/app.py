@@ -13,6 +13,8 @@ import os
 import base64
 import binascii
 import hmac
+import hashlib
+import time
 from collections import OrderedDict
 from pathlib import Path
 from typing import Literal
@@ -44,6 +46,8 @@ PUBLIC_DEMO = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "public-demo"
 PROTECTED_UPLOAD = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "protected-upload"
 UPLOAD_USER = os.environ.get("IPSEC_UPLOAD_USER", "analyst")
 UPLOAD_PASSWORD = os.environ.get("IPSEC_UPLOAD_PASSWORD", "")
+SESSION_COOKIE = "ipsec_workspace_session"
+SESSION_SECONDS = 12 * 60 * 60
 if PROTECTED_UPLOAD and (not UPLOAD_USER or not UPLOAD_PASSWORD):
     raise RuntimeError("Protected upload mode requires IPSEC_UPLOAD_USER and IPSEC_UPLOAD_PASSWORD")
 DEMO_CAPTURES = {
@@ -68,6 +72,14 @@ def _load_demo_results() -> None:
 
 
 def _authenticated(request: Request) -> bool:
+    session = request.cookies.get(SESSION_COOKIE, "")
+    expiry, separator, signature = session.partition(".")
+    if separator and expiry.isdecimal() and int(expiry) > time.time():
+        expected = hmac.new(
+            UPLOAD_PASSWORD.encode(), f"session:{UPLOAD_USER}:{expiry}".encode(), hashlib.sha256
+        ).hexdigest()
+        if hmac.compare_digest(signature, expected):
+            return True
     scheme, _, token = request.headers.get("authorization", "").partition(" ")
     if scheme.lower() != "basic" or not token:
         return False
@@ -80,11 +92,10 @@ def _authenticated(request: Request) -> bool:
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
-    if PROTECTED_UPLOAD and request.url.path != "/api/health" and not _authenticated(request):
-        return JSONResponse(
-            {"detail": "Authentication required"}, status_code=401,
-            headers={"WWW-Authenticate": 'Basic realm="IPsec Analyzer Workspace"', "Cache-Control": "no-store"},
-        )
+    if PROTECTED_UPLOAD and request.url.path not in ("/api/health", "/login", "/assets/login.css") and not _authenticated(request):
+        if request.method in ("GET", "HEAD") and not request.url.path.startswith("/api/"):
+            return RedirectResponse("/login", status_code=303)
+        return JSONResponse({"detail": "Authentication required"}, status_code=401)
     if PUBLIC_DEMO:
         _load_demo_results()
         if request.method not in ("GET", "HEAD"):
@@ -114,6 +125,52 @@ async def security_headers(request: Request, call_next):
         "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; "
         "script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'"
     )
+    return response
+
+
+def _login_page(error: bool = False) -> str:
+    message = '<p class="error" role="alert">Incorrect username or password.</p>' if error else ""
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · IPsec Analyzer</title><link rel="stylesheet" href="/assets/login.css"></head>
+<body><main class="login-shell"><section class="login-panel">
+<div class="eyebrow">IPSEC ANALYZER / PROTECTED WORKSPACE</div>
+<h1>Sign in to analyze a capture.</h1>
+<p class="intro">Use the workspace credentials configured in Render. Upload only captures you are authorized to analyze.</p>
+{message}
+<form action="/login" method="post">
+<label for="username">Username</label><input id="username" name="username" autocomplete="username" required>
+<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+<button type="submit">Sign in <span aria-hidden="true">↗</span></button>
+</form><p class="footnote">Results are temporary and may disappear when this service restarts.</p>
+</section></main></body></html>"""
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page():
+    if not PROTECTED_UPLOAD:
+        raise HTTPException(404)
+    return HTMLResponse(_login_page())
+
+
+@app.post("/login")
+async def login(request: Request):
+    if not PROTECTED_UPLOAD:
+        raise HTTPException(404)
+    async with request.form(max_fields=2, max_files=0) as form:
+        username = form.get("username", "")
+        password = form.get("password", "")
+    if not isinstance(username, str) or not isinstance(password, str) or not (
+        hmac.compare_digest(username, UPLOAD_USER) and hmac.compare_digest(password, UPLOAD_PASSWORD)
+    ):
+        return HTMLResponse(_login_page(error=True), status_code=401)
+    expiry = str(int(time.time()) + SESSION_SECONDS)
+    signature = hmac.new(
+        UPLOAD_PASSWORD.encode(), f"session:{UPLOAD_USER}:{expiry}".encode(), hashlib.sha256
+    ).hexdigest()
+    response = RedirectResponse("/", status_code=303)
+    response.set_cookie(SESSION_COOKIE, f"{expiry}.{signature}", max_age=SESSION_SECONDS,
+                        secure=True, httponly=True, samesite="strict", path="/")
     return response
 
 

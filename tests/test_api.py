@@ -10,7 +10,7 @@ from tests.fixtures.build_fixtures import ipv4_packet, udp, write_pcap
 from tests.test_ike_parser import ike_sa_message
 
 
-def request(method: str, path: str, body: bytes = b"", headers=None, client="127.0.0.1"):
+def request(method: str, path: str, body: bytes = b"", headers=None, client="127.0.0.1", return_headers=False):
     route, _, query = path.partition("?")
     async def run():
         sent = []
@@ -34,8 +34,11 @@ def request(method: str, path: str, body: bytes = b"", headers=None, client="127
             "http_version": "1.1",
         }
         await app(scope, receive, send)
-        status = next(message["status"] for message in sent if message["type"] == "http.response.start")
+        start = next(message for message in sent if message["type"] == "http.response.start")
+        status = start["status"]
         content = b"".join(message.get("body", b"") for message in sent if message["type"] == "http.response.body")
+        if return_headers:
+            return status, content, {key.decode(): value.decode() for key, value in start["headers"]}
         return status, content
 
     return asyncio.run(run())
@@ -76,9 +79,21 @@ def test_protected_hosted_workspace_requires_password_for_upload_and_results(mon
     monkeypatch.setattr(api_module, "UPLOAD_USER", "analyst")
     monkeypatch.setattr(api_module, "UPLOAD_PASSWORD", "test-secret")
     external = {"host": "ipsec-analyzer-workspace.onrender.com"}
-    assert request("GET", "/", headers=external, client="203.0.113.6")[0] == 401
+    assert request("GET", "/", headers=external, client="203.0.113.6")[0] == 303
+    assert request("GET", "/login", headers=external, client="203.0.113.6")[0] == 200
+    assert request("GET", "/assets/login.css", headers=external, client="203.0.113.6")[0] == 200
     assert request("POST", "/api/analyses", b"capture", external, client="203.0.113.6")[0] == 401
     assert request("GET", "/api/health", headers=external, client="203.0.113.6")[0] == 200
+    form_headers = {**external, "content-type": "application/x-www-form-urlencoded"}
+    assert request("POST", "/login", b"username=analyst&password=wrong", form_headers,
+                   client="203.0.113.6")[0] == 401
+    status, _, response_headers = request("POST", "/login", b"username=analyst&password=test-secret",
+                                          form_headers, client="203.0.113.6", return_headers=True)
+    assert status == 303
+    assert "secure" in response_headers["set-cookie"].lower()
+    assert "httponly" in response_headers["set-cookie"].lower()
+    cookie = response_headers["set-cookie"].split(";", 1)[0]
+    assert request("GET", "/", headers={**external, "cookie": cookie}, client="203.0.113.6")[0] == 200
     external["authorization"] = "Basic " + base64.b64encode(b"analyst:test-secret").decode()
     status, home = request("GET", "/", headers=external, client="203.0.113.6")
     assert status == 200

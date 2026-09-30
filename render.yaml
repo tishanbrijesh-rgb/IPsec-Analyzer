@@ -18,8 +18,4 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: IPSEC_DEPLOYMENT_MODE
-        value: protected-upload
-      - key: IPSEC_UPLOAD_USER
-        value: analyst
-      - key: IPSEC_UPLOAD_PASSWORD
-        generateValue: true
+        value: public-upload

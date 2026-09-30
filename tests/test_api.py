@@ -76,6 +76,7 @@ def test_health_and_home_accept_head_requests():
 
 def test_protected_hosted_workspace_requires_password_for_upload_and_results(monkeypatch, tmp_path):
     monkeypatch.setattr(api_module, "PROTECTED_UPLOAD", True)
+    monkeypatch.setattr(api_module, "HOSTED_UPLOAD", True)
     monkeypatch.setattr(api_module, "UPLOAD_USER", "analyst")
     monkeypatch.setattr(api_module, "UPLOAD_PASSWORD", "test-secret")
     external = {"host": "ipsec-analyzer-workspace.onrender.com"}
@@ -105,6 +106,25 @@ def test_protected_hosted_workspace_requires_password_for_upload_and_results(mon
     assert request("GET", f"/api/analyses/{analysis_id}", headers={"host": external["host"]},
                    client="203.0.113.6")[0] == 401
     assert request("GET", f"/api/analyses/{analysis_id}", headers=external,
+                   client="203.0.113.6")[0] == 200
+
+
+def test_public_upload_workspace_opens_without_login(monkeypatch, tmp_path):
+    monkeypatch.setattr(api_module, "PUBLIC_UPLOAD", True)
+    monkeypatch.setattr(api_module, "HOSTED_UPLOAD", True)
+    external = {"host": "ipsec-analyzer-workspace.onrender.com"}
+    status, home = request("GET", "/", headers=external, client="203.0.113.6")
+    assert status == 200
+    assert b"PUBLIC UPLOAD WORKSPACE" in home
+    assert request("GET", "/api/health", headers=external, client="203.0.113.6")[1] == b'{"status":"ready","version":"0.1.0","mode":"public-upload"}'
+    assert request("GET", "/login", headers=external, client="203.0.113.6")[0] == 404
+    assert b"without a password" in request("GET", "/privacy", headers=external, client="203.0.113.6")[1]
+    capture = write_pcap(tmp_path / "public.pcap").read_bytes()
+    status, body = request("POST", "/api/analyses", capture,
+                           {**external, "content-type": "application/octet-stream"}, client="203.0.113.6")
+    assert status == 201
+    analysis_id = json.loads(body)["id"]
+    assert request("GET", f"/analyses/{analysis_id}/assessment", headers=external,
                    client="203.0.113.6")[0] == 200
 
 

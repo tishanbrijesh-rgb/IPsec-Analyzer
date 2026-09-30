@@ -44,6 +44,8 @@ ROOT_DIR = _repository_root()
 WEB_DIR = ROOT_DIR / "dashboard" / "web"
 PUBLIC_DEMO = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "public-demo"
 PROTECTED_UPLOAD = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "protected-upload"
+PUBLIC_UPLOAD = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "public-upload"
+HOSTED_UPLOAD = PROTECTED_UPLOAD or PUBLIC_UPLOAD
 UPLOAD_USER = os.environ.get("IPSEC_UPLOAD_USER", "analyst")
 UPLOAD_PASSWORD = os.environ.get("IPSEC_UPLOAD_PASSWORD", "")
 SESSION_COOKIE = "ipsec_workspace_session"
@@ -100,7 +102,7 @@ async def security_headers(request: Request, call_next):
         _load_demo_results()
         if request.method not in ("GET", "HEAD"):
             return JSONResponse({"detail": "Public demo is read-only"}, status_code=405)
-    elif not PROTECTED_UPLOAD:
+    elif not HOSTED_UPLOAD:
         host_header = request.headers.get("host", "").lower()
         host = host_header.split("]")[0] + "]" if host_header.startswith("[") else host_header.split(":")[0]
         if host not in ("127.0.0.1", "localhost", "[::1]"):
@@ -176,7 +178,7 @@ async def login(request: Request):
 
 @app.get("/api/health")
 def health():
-    mode = "public-demo" if PUBLIC_DEMO else "protected-upload" if PROTECTED_UPLOAD else "local"
+    mode = "public-demo" if PUBLIC_DEMO else "protected-upload" if PROTECTED_UPLOAD else "public-upload" if PUBLIC_UPLOAD else "local"
     return {"status": "ready", "version": "0.1.0", "mode": mode}
 
 
@@ -306,8 +308,8 @@ if WEB_DIR.is_dir():
         if PUBLIC_DEMO:
             return (WEB_DIR / "demo.html").read_text(encoding="utf-8")
         html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-        if PROTECTED_UPLOAD:
-            html = html.replace("LOCAL WORKSPACE", "PROTECTED WORKSPACE")
+        if HOSTED_UPLOAD:
+            html = html.replace("LOCAL WORKSPACE", "PROTECTED WORKSPACE" if PROTECTED_UPLOAD else "PUBLIC UPLOAD WORKSPACE")
             html = html.replace("analyzed by the local service", "analyzed by the protected hosted service")
             html = html.replace("Choose a local capture", "Choose an authorized capture")
             html = html.replace("A local capture", "An authorized capture")
@@ -329,22 +331,31 @@ if WEB_DIR.is_dir():
             html = html.replace("<body>", '<body class="public-demo">', 1)
             html = html.replace("LOCAL WORKSPACE", "PUBLIC LAB DEMO")
             html = html.replace("New capture</a>", "All lab cases</a>")
-        elif PROTECTED_UPLOAD:
-            html = html.replace("LOCAL WORKSPACE", "PROTECTED WORKSPACE")
+        elif HOSTED_UPLOAD:
+            html = html.replace("LOCAL WORKSPACE", "PROTECTED WORKSPACE" if PROTECTED_UPLOAD else "PUBLIC UPLOAD WORKSPACE")
         return html
 
     @app.get("/privacy", response_class=HTMLResponse)
     def privacy():
         if PUBLIC_DEMO:
             return (WEB_DIR / "demo-privacy.html").read_text(encoding="utf-8")
-        if PROTECTED_UPLOAD:
-            return (WEB_DIR / "workspace-privacy.html").read_text(encoding="utf-8")
+        if HOSTED_UPLOAD:
+            html = (WEB_DIR / "workspace-privacy.html").read_text(encoding="utf-8")
+            if PUBLIC_UPLOAD:
+                html = html.replace("PROTECTED WORKSPACE", "PUBLIC UPLOAD WORKSPACE").replace("Protected lab workspace", "Public upload workspace")
+                html = html.replace("This password-protected prototype", "This public prototype")
+                html = html.replace("The service uses a shared password over HTTPS. Anyone with that password can view stored results and reports.", "The service accepts uploads without a password over HTTPS. Anyone with a result link can view that result and its reports.")
+                html = html.replace("Keep the password private and use only approved lab data.", "Use only approved lab data and do not share result links containing sensitive metadata.")
+            return html
         return (WEB_DIR / "privacy.html").read_text(encoding="utf-8")
 
     @app.get("/terms", response_class=HTMLResponse)
     def terms():
         if PUBLIC_DEMO:
             return (WEB_DIR / "demo-terms.html").read_text(encoding="utf-8")
-        if PROTECTED_UPLOAD:
-            return (WEB_DIR / "workspace-terms.html").read_text(encoding="utf-8")
+        if HOSTED_UPLOAD:
+            html = (WEB_DIR / "workspace-terms.html").read_text(encoding="utf-8")
+            if PUBLIC_UPLOAD:
+                html = html.replace("PROTECTED WORKSPACE", "PUBLIC UPLOAD WORKSPACE").replace("Protected lab workspace", "Public upload workspace")
+            return html
         return (WEB_DIR / "terms.html").read_text(encoding="utf-8")

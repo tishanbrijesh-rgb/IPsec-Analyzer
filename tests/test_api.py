@@ -65,6 +65,11 @@ def test_public_demo_is_read_only_and_serves_reviewed_captures(monkeypatch):
     assert b"All lab cases</a>" in page
 
 
+def test_health_and_home_accept_head_requests():
+    assert request("HEAD", "/api/health") == (200, b"")
+    assert request("HEAD", "/") == (200, b"")
+
+
 def test_upload_and_get(tmp_path):
     capture = write_pcap(tmp_path / "api.pcap").read_bytes()
     status, body = request("POST", "/api/analyses", capture, {"content-type": "application/octet-stream"})

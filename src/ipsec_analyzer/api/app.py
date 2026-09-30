@@ -98,6 +98,11 @@ def health():
     return {"status": "ready", "version": "0.1.0", "mode": "public-demo" if PUBLIC_DEMO else "local"}
 
 
+@app.head("/api/health")
+def health_head():
+    return Response(status_code=200)
+
+
 @app.post("/api/analyses", status_code=201)
 async def create_analysis(request: Request):
     content_type = request.headers.get("content-type", "").split(";")[0].strip()
@@ -209,6 +214,10 @@ def get_report(analysis_id: str, format: Literal["text", "html", "pdf", "json"] 
 
 if WEB_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=WEB_DIR), name="assets")
+
+    @app.head("/")
+    def index_head():
+        return Response(status_code=200)
 
     @app.get("/", response_class=HTMLResponse)
     def index():

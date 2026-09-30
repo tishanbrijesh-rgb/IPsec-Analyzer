@@ -60,12 +60,15 @@ Phase 4 status before calling independent reproduction complete.
 Run the read-only consistency audit from the repository root after both runs:
 
 ```sh
-PYTHONPATH=src python3 -m testbed.scripts.audit_reproduction testbed/generated/repro-modern-01 testbed/generated/repro-cbc-01
+sudo env PYTHONPATH=src python3 -m testbed.scripts.audit_reproduction testbed/generated/repro-modern-01 testbed/generated/repro-cbc-01
 ```
 
 It checks each secret-free record against its PCAP, selected IKE transform,
 bidirectional ESP flows and the installed Child SA line under each peer heading.
 It prints a compact JSON summary and does not publish or modify the captures.
+`run_profile.sh` creates the run directories as root, so the audit needs `sudo`
+to read them. `env PYTHONPATH=src` keeps the project modules importable under
+`sudo`.
 The audit does not establish who operated the host, physical host independence,
 or whether the installed state was captured at the same instant as every packet.
 

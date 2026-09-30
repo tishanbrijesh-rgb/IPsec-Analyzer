@@ -293,8 +293,8 @@ def test_upload_over_16_mib_rejected_without_retaining_raw_file(tmp_path, monkey
 def test_dashboard_and_security_headers():
     status, body = request("GET", "/")
     assert status == 200
-    assert b"Decode the <em>unseen.</em>" in body
-    assert b'/assets/editorial.css' in body
+    assert b"Understand what your VPN capture actually shows." in body
+    assert b'/assets/workspace.css' in body
     assert b'href="/privacy"' in body
     assert b'href="/terms"' in body
     assert b"\xe2\x80\x94" not in body

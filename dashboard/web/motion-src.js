@@ -35,6 +35,7 @@ window.addEventListener("ipsec:status", () => {
 
 window.addEventListener("ipsec:results", () => {
   if (reduceMotion.matches || lowEnd) return;
+  enter(document.querySelector(".view-intro"), 0, motionTokens.distance.md);
   enter(document.querySelector(".provenance-rail"));
   document.querySelectorAll(".summary-strip .metric").forEach((item, index) =>
     enter(item, motionTokens.duration.fast + index * 0.06));

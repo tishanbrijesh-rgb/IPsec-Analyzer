@@ -18,6 +18,37 @@ let currentAnalysisId = null;
 const views = {assessment: "findings-title", threats: "threat-title", sessions: "sessions-title",
   flows: "flows-title", inference: "inference-title", evidence: "evidence-title",
   packets: "packets-title", reports: "capture-title"};
+const viewContent = {
+  assessment: ["01", "Security assessment", "Inspect each rule, its evidence state and the reason behind the result."],
+  threats: ["02", "Threat matrix", "Review failed controls and the assets they may affect."],
+  sessions: ["03", "IKE sessions", "Follow key exchange activity and selected proposals."],
+  flows: ["04", "Protected flows", "Compare directional ESP and AH traffic without exposing payloads."],
+  inference: ["05", "Traffic inference", "Read model estimates separately from observed protocol facts."],
+  evidence: ["06", "Evidence ledger", "Trace every value to its source, packet or explicit unknown reason."],
+  packets: ["07", "Packet references", "Inspect safe metadata for the packets cited by this analysis."],
+  reports: ["08", "Export reports", "Download the complete analysis or a redacted copy for sharing."],
+};
+const ruleNames = {
+  "IPSEC-IKE-LEGACY-001": "Legacy IKE version",
+  "IPSEC-IKEV2-DES-001": "Selected DES encryption",
+  "IPSEC-IKEV2-PRF-MD5-001": "Selected MD5 PRF",
+  "IPSEC-IKEV2-INTEG-MD5-001": "Selected MD5 integrity",
+  "IPSEC-IKEV2-MODP1-001": "Selected MODP group 1",
+  "IPSEC-CONFIG-MODE-001": "Deployment mode",
+  "IPSEC-CONFIG-LIFETIME-001": "Child SA lifetime",
+  "IPSEC-CONFIG-REPLAY-001": "Replay protection",
+  "IPSEC-CONFIG-PFS-001": "Forward secrecy",
+};
+for (const wrap of document.querySelectorAll(".table-wrap")) {
+  const heading = wrap.closest("section")?.querySelector("h2")?.textContent || "Results";
+  wrap.tabIndex = 0;
+  wrap.setAttribute("role", "region");
+  wrap.setAttribute("aria-label", `${heading} table; scroll horizontally for more columns`);
+  const hint = document.createElement("p");
+  hint.className = "mobile-table-hint";
+  hint.textContent = "Scroll inside the table to see all columns.";
+  wrap.before(hint);
+}
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
@@ -141,6 +172,11 @@ function render(data, id) {
   emptyGuide.hidden = true;
   document.querySelector(".page-heading").hidden = true;
   const view = location.pathname.split("/").at(-1) in views ? location.pathname.split("/").at(-1) : "assessment";
+  const [number, title, description] = viewContent[view];
+  document.getElementById("view-number").textContent = number;
+  document.getElementById("view-title").textContent = title;
+  document.getElementById("view-description").textContent = description;
+  document.getElementById("view-kicker").textContent = `CAPTURE REVIEW / ${number}`;
   for (const section of document.querySelectorAll("[data-page]")) section.hidden = section.dataset.page !== view;
   for (const link of document.querySelectorAll("[data-page-link]")) {
     link.href = `/analyses/${id}/${link.dataset.pageLink}`;
@@ -162,6 +198,8 @@ function render(data, id) {
   document.getElementById("metric-score").textContent = data.risk_score.status === "SCORED"
     ? `${data.risk_score.value}/100 · ${data.risk_score.band}` : "Withheld";
   document.getElementById("metric-score-note").textContent = data.risk_score.status === "SCORED"
+    ? "Score details" : "Why withheld";
+  document.getElementById("metric-score-detail").textContent = data.risk_score.status === "SCORED"
     ? `${Math.round(data.risk_score.coverage * 100)}% weighted rule coverage · ${data.risk_score.policy_version}`
     : data.risk_score.withheld_reason;
   document.getElementById("config-status").textContent = data.configuration.status;
@@ -202,7 +240,13 @@ function render(data, id) {
   for (const {result} of sortedEvaluations) {
     const row = findings.insertRow();
     row.dataset.ruleStatus = result.status;
-    cell(row, result.rule_id, "mono");
+    const ruleCell = row.insertCell();
+    ruleCell.className = "rule-cell";
+    const ruleName = document.createElement("strong");
+    ruleName.textContent = ruleNames[result.rule_id] || "Security control";
+    const ruleCode = document.createElement("code");
+    ruleCode.textContent = result.rule_id;
+    ruleCell.append(ruleName, ruleCode);
     const badgeCell = row.insertCell();
     const badge = document.createElement("span");
     badge.className = "badge " + result.status.toLowerCase();

@@ -45,6 +45,10 @@
       </section>
 
       <section id="results" class="results" hidden aria-label="Analysis results">
+        <header class="view-intro" aria-labelledby="view-title">
+          <div class="view-intro-copy"><p id="view-kicker" class="eyebrow">INVESTIGATION</p><h1 id="view-title">Assessment</h1><p id="view-description">Review the security findings and their evidence.</p></div>
+          <div class="view-intro-mark" aria-hidden="true"><span>IP /</span><strong id="view-number">01</strong></div>
+        </header>
         <div class="provenance-rail" aria-label="Capture provenance">
           <div class="provenance-item"><span class="rail-label">ANALYSIS</span><strong id="analysis-state">Complete</strong></div>
           <div class="provenance-item"><span class="rail-label">CAPTURE ID</span><strong id="capture-id" class="mono">Pending</strong></div>
@@ -56,7 +60,7 @@
           <div class="metric"><span class="metric-label">IKE sessions</span><strong id="metric-sessions">Pending</strong></div>
           <div class="metric"><span class="metric-label">ESP / AH flows</span><strong id="metric-flows">Pending</strong></div>
           <div class="metric"><span class="metric-label">Rule findings</span><strong id="metric-findings">Pending</strong></div>
-          <div class="metric metric-score"><span class="metric-label">Risk score</span><strong id="metric-score">Withheld</strong><span id="metric-score-note" class="metric-note">Evidence gate pending</span></div>
+          <div class="metric metric-score"><span class="metric-label">Risk score</span><strong id="metric-score">Withheld</strong><details class="score-details"><summary id="metric-score-note" class="metric-note">Why withheld</summary><p id="metric-score-detail">Evidence gate pending</p></details></div>
         </div>
 
         <nav class="result-nav" aria-label="Analysis pages"><a data-page-link="assessment" href="#">Assessment</a><a data-page-link="threats" href="#">Threat matrix</a><a data-page-link="sessions" href="#">IKE sessions</a><a data-page-link="flows" href="#">Flows</a><a data-page-link="inference" href="#">Inference</a><a data-page-link="evidence" href="#">Evidence</a><a data-page-link="packets" href="#">Packets</a><a data-page-link="reports" href="#">Reports</a><a href="/">New capture</a></nav>

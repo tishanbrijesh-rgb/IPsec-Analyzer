@@ -48,6 +48,10 @@ capture and cleanup. When Ubuntu stops, it loses its network namespaces and
    and `peers.sh` starts the two daemons inside their namespaces and loads
    the matching peer configs. The [strongSwan namespace guide](https://docs.strongswan.org/docs/6.0/howtos/nameSpaces.html)
    explains why independent daemon sockets are needed.
+   On hosts that confine `swanctl`, a `Permission denied` connection to these
+   sockets may require the narrow AppArmor local rules in
+   [Phase 4 reproduction](../docs/design/PHASE4_REPRODUCTION.md#ubuntu-apparmor-access-to-lab-vici-sockets).
+   The startup script prints this diagnostic when `swanctl` reports that error.
 3. Start the **outer-link capture before initiating** so the IKE negotiation
    is recorded. Inside the client namespace, run
    `tcpdump -i sih4c -s 0 -w <run-dir>/outer.pcap 'ip and (udp port 500 or udp port 4500 or proto 50 or proto 51)'`.

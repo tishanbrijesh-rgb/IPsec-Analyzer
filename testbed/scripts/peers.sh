@@ -47,8 +47,18 @@ case "$action" in
         sleep 0.25
       done
       [[ "$ready" == 1 ]] || { echo "$peer daemon did not open VICI socket; see daemon log" >&2; exit 1; }
-      ip netns exec "sih4-$peer" swanctl --load-all --uri "$(socket_for "$peer")" \
-        --file "$run_dir/$peer.conf" --noprompt
+      if load_output=$(ip netns exec "sih4-$peer" swanctl --load-all \
+          --uri "$(socket_for "$peer")" --file "$run_dir/$peer.conf" --noprompt 2>&1); then
+        printf '%s\n' "$load_output"
+      else
+        printf '%s\n' "$load_output" >&2
+        if grep -qi 'Permission denied' <<< "$load_output"; then
+          echo "swanctl cannot access the $peer lab VICI socket at $(socket_for "$peer")." >&2
+          echo "Check the kernel log for an AppArmor DENIED entry for /usr/sbin/swanctl." >&2
+          echo "If present, follow docs/design/PHASE4_REPRODUCTION.md (AppArmor access to lab VICI sockets)." >&2
+        fi
+        exit 1
+      fi
     done
     trap - ERR
     ;;

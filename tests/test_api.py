@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 from collections import OrderedDict
 from pathlib import Path
@@ -68,6 +69,28 @@ def test_public_demo_is_read_only_and_serves_reviewed_captures(monkeypatch):
 def test_health_and_home_accept_head_requests():
     assert request("HEAD", "/api/health") == (200, b"")
     assert request("HEAD", "/") == (200, b"")
+
+
+def test_protected_hosted_workspace_requires_password_for_upload_and_results(monkeypatch, tmp_path):
+    monkeypatch.setattr(api_module, "PROTECTED_UPLOAD", True)
+    monkeypatch.setattr(api_module, "UPLOAD_USER", "analyst")
+    monkeypatch.setattr(api_module, "UPLOAD_PASSWORD", "test-secret")
+    external = {"host": "ipsec-analyzer-workspace.onrender.com"}
+    assert request("GET", "/", headers=external, client="203.0.113.6")[0] == 401
+    assert request("POST", "/api/analyses", b"capture", external, client="203.0.113.6")[0] == 401
+    assert request("GET", "/api/health", headers=external, client="203.0.113.6")[0] == 200
+    external["authorization"] = "Basic " + base64.b64encode(b"analyst:test-secret").decode()
+    status, home = request("GET", "/", headers=external, client="203.0.113.6")
+    assert status == 200
+    assert b"PROTECTED WORKSPACE" in home
+    status, body = request("POST", "/api/analyses", write_pcap(tmp_path / "hosted.pcap").read_bytes(),
+                           {**external, "content-type": "application/octet-stream"}, client="203.0.113.6")
+    assert status == 201
+    analysis_id = json.loads(body)["id"]
+    assert request("GET", f"/api/analyses/{analysis_id}", headers={"host": external["host"]},
+                   client="203.0.113.6")[0] == 401
+    assert request("GET", f"/api/analyses/{analysis_id}", headers=external,
+                   client="203.0.113.6")[0] == 200
 
 
 def test_upload_and_get(tmp_path):

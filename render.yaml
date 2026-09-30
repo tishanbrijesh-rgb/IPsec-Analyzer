@@ -9,3 +9,17 @@ services:
     envVars:
       - key: IPSEC_DEPLOYMENT_MODE
         value: public-demo
+  - type: web
+    name: ipsec-analyzer-workspace
+    runtime: python
+    plan: free
+    buildCommand: pip install .
+    startCommand: uvicorn ipsec_analyzer.api.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: IPSEC_DEPLOYMENT_MODE
+        value: protected-upload
+      - key: IPSEC_UPLOAD_USER
+        value: analyst
+      - key: IPSEC_UPLOAD_PASSWORD
+        generateValue: true

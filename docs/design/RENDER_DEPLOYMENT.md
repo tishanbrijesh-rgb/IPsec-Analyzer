@@ -1,4 +1,4 @@
-# Render public lab demo
+# Render lab demo and protected workspace
 
 The repository root contains `render.yaml` for a free Render Python web service. It builds with `pip install .`, starts Uvicorn on Render's `$PORT`, and checks `/api/health`. The `IPSEC_DEPLOYMENT_MODE=public-demo` setting enables a public **read-only** gallery of four reviewed project captures. The ordinary local mode remains loopback-only and supports authorized capture uploads.
 
@@ -8,4 +8,8 @@ Public examples are captured lab runs with generated test traffic. Their risk sc
 
 To deploy, sync the Blueprint from this repository in the Render dashboard. The service should use the repository's `main` branch and the free plan shown in `render.yaml`. Verify `/api/health` returns `mode: public-demo`, `/` lists the four cases, a case opens its analysis, and POST `/api/analyses` returns 405. The Render URL must be checked after deployment; a pushed `render.yaml` alone does not create a service.
 
-Do not change this public service to the upload mode without adding access control, a reviewed privacy notice, retention controls and a hosting decision. The current local upload API deliberately rejects nonlocal clients.
+The second service, `ipsec-analyzer-workspace`, provides the local capture workflow on Render. It uses `IPSEC_DEPLOYMENT_MODE=protected-upload` and HTTP Basic authentication for every page, asset, upload, result and report; `/api/health` remains public. Render's Blueprint can generate a random password with `generateValue: true`. If creating the service manually, set a strong unique `IPSEC_UPLOAD_PASSWORD` secret in the Render dashboard before starting it. Do not commit the password. The username defaults to `analyst` in this Blueprint.
+
+Only share the workspace URL and password with analysts authorized to process the uploaded lab captures. Use HTTPS. The complete PCAP and optional sanitized configuration JSON are transmitted to Render. The temporary capture file is removed after analysis, while the last 16 analysis results remain in process memory until eviction or restart. Anyone with the shared password can read those results and reports. There is no per-user account, durable retention, individual deletion, or audit trail. Keep production traffic, credentials and key material out of this prototype.
+
+Check the protected service after deployment: unauthenticated `/` and `/api/analyses` return 401, `/api/health` returns `mode: protected-upload`, and authenticated upload of an authorized lab PCAP returns 201 and opens the resulting assessment. The original public demo remains read-only.

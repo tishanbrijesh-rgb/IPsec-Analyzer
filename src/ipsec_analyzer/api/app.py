@@ -1,4 +1,4 @@
-"""Local analysis API, with an opt-in read-only public sample gallery.
+"""Local analysis API, a read-only public gallery, and a protected hosted workspace.
 
 Run with: uvicorn ipsec_analyzer.api.app:app --host 127.0.0.1 --port 8000
 The default upload mode has no user accounts and must remain on loopback.
@@ -10,6 +10,9 @@ import tempfile
 import ipaddress
 import json
 import os
+import base64
+import binascii
+import hmac
 from collections import OrderedDict
 from pathlib import Path
 from typing import Literal
@@ -38,6 +41,11 @@ def _repository_root() -> Path:
 ROOT_DIR = _repository_root()
 WEB_DIR = ROOT_DIR / "dashboard" / "web"
 PUBLIC_DEMO = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "public-demo"
+PROTECTED_UPLOAD = os.environ.get("IPSEC_DEPLOYMENT_MODE") == "protected-upload"
+UPLOAD_USER = os.environ.get("IPSEC_UPLOAD_USER", "analyst")
+UPLOAD_PASSWORD = os.environ.get("IPSEC_UPLOAD_PASSWORD", "")
+if PROTECTED_UPLOAD and (not UPLOAD_USER or not UPLOAD_PASSWORD):
+    raise RuntimeError("Protected upload mode requires IPSEC_UPLOAD_USER and IPSEC_UPLOAD_PASSWORD")
 DEMO_CAPTURES = {
     "modern-tunnel": ROOT_DIR / "data/sample/modern-tunnel.pcap",
     "cbc-no-pfs": ROOT_DIR / "data/sample/cbc-no-pfs.pcap",
@@ -59,13 +67,29 @@ def _load_demo_results() -> None:
         _demo_ids[slug] = analysis_id
 
 
+def _authenticated(request: Request) -> bool:
+    scheme, _, token = request.headers.get("authorization", "").partition(" ")
+    if scheme.lower() != "basic" or not token:
+        return False
+    try:
+        username, password = base64.b64decode(token, validate=True).decode("utf-8").split(":", 1)
+    except (binascii.Error, UnicodeDecodeError, ValueError):
+        return False
+    return hmac.compare_digest(username, UPLOAD_USER) and hmac.compare_digest(password, UPLOAD_PASSWORD)
+
+
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
+    if PROTECTED_UPLOAD and request.url.path != "/api/health" and not _authenticated(request):
+        return JSONResponse(
+            {"detail": "Authentication required"}, status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="IPsec Analyzer Workspace"', "Cache-Control": "no-store"},
+        )
     if PUBLIC_DEMO:
         _load_demo_results()
         if request.method not in ("GET", "HEAD"):
             return JSONResponse({"detail": "Public demo is read-only"}, status_code=405)
-    else:
+    elif not PROTECTED_UPLOAD:
         host_header = request.headers.get("host", "").lower()
         host = host_header.split("]")[0] + "]" if host_header.startswith("[") else host_header.split(":")[0]
         if host not in ("127.0.0.1", "localhost", "[::1]"):
@@ -95,7 +119,8 @@ async def security_headers(request: Request, call_next):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ready", "version": "0.1.0", "mode": "public-demo" if PUBLIC_DEMO else "local"}
+    mode = "public-demo" if PUBLIC_DEMO else "protected-upload" if PROTECTED_UPLOAD else "local"
+    return {"status": "ready", "version": "0.1.0", "mode": mode}
 
 
 @app.head("/api/health")
@@ -223,7 +248,13 @@ if WEB_DIR.is_dir():
     def index():
         if PUBLIC_DEMO:
             return (WEB_DIR / "demo.html").read_text(encoding="utf-8")
-        return (WEB_DIR / "index.html").read_text(encoding="utf-8")
+        html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+        if PROTECTED_UPLOAD:
+            html = html.replace("LOCAL WORKSPACE", "PROTECTED WORKSPACE")
+            html = html.replace("analyzed by the local service", "analyzed by the protected hosted service")
+            html = html.replace("Choose a local capture", "Choose an authorized capture")
+            html = html.replace("A local capture", "An authorized capture")
+        return html
 
     @app.get("/demo/{slug}")
     def demo_analysis(slug: str):
@@ -241,16 +272,22 @@ if WEB_DIR.is_dir():
             html = html.replace("<body>", '<body class="public-demo">', 1)
             html = html.replace("LOCAL WORKSPACE", "PUBLIC LAB DEMO")
             html = html.replace("New capture</a>", "All lab cases</a>")
+        elif PROTECTED_UPLOAD:
+            html = html.replace("LOCAL WORKSPACE", "PROTECTED WORKSPACE")
         return html
 
     @app.get("/privacy", response_class=HTMLResponse)
     def privacy():
         if PUBLIC_DEMO:
             return (WEB_DIR / "demo-privacy.html").read_text(encoding="utf-8")
+        if PROTECTED_UPLOAD:
+            return (WEB_DIR / "workspace-privacy.html").read_text(encoding="utf-8")
         return (WEB_DIR / "privacy.html").read_text(encoding="utf-8")
 
     @app.get("/terms", response_class=HTMLResponse)
     def terms():
         if PUBLIC_DEMO:
             return (WEB_DIR / "demo-terms.html").read_text(encoding="utf-8")
+        if PROTECTED_UPLOAD:
+            return (WEB_DIR / "workspace-terms.html").read_text(encoding="utf-8")
         return (WEB_DIR / "terms.html").read_text(encoding="utf-8")
